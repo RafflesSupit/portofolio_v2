@@ -1,0 +1,61 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { prisma } from "@/lib/prisma";
+import { uploadToR2 } from "@/lib/r2";
+
+const profileSchema = z.object({
+  name: z.string().min(1),
+  role: z.string().min(1),
+  eyebrow: z.string().min(1),
+  headline: z.string().min(1),
+  subhead: z.string().min(1),
+  valueProposition: z.string().min(1),
+  bio: z.string().min(1),
+  email: z.string().email(),
+  githubUrl: z.string().url(),
+  linkedinUrl: z.string().url(),
+  location: z.string().min(1),
+  resumeUrl: z.string().min(1),
+  focusText: z.string().min(1),
+  currentlyText: z.string().min(1),
+  openToText: z.string().min(1),
+});
+
+export type ProfileFormState = { error?: string; success?: boolean };
+
+export async function updateProfile(
+  _prevState: ProfileFormState,
+  formData: FormData,
+): Promise<ProfileFormState> {
+  const parsed = profileSchema.safeParse(Object.fromEntries(formData.entries()));
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Data tidak valid." };
+  }
+
+  const bio = parsed.data.bio
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+
+  let resumeUrl = parsed.data.resumeUrl;
+  const resumeFile = formData.get("resume");
+  if (resumeFile instanceof File && resumeFile.size > 0) {
+    resumeUrl = await uploadToR2(resumeFile, "resume");
+  }
+
+  const existing = await prisma.profile.findFirst();
+  const data = { ...parsed.data, bio, resumeUrl };
+
+  if (existing) {
+    await prisma.profile.update({ where: { id: existing.id }, data });
+  } else {
+    await prisma.profile.create({ data });
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin/profile");
+  return { success: true };
+}
