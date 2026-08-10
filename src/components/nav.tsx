@@ -274,7 +274,16 @@ export function Nav({ profile, projectCount }: { profile: ProfileData; projectCo
             transition={{ duration: shouldReduceMotion ? 0 : 0.3 }}
           >
             <motion.div
-              className="no-scrollbar mx-auto flex h-full w-full max-w-[1180px] flex-col justify-center overflow-y-auto px-6 py-24 md:px-8"
+              // `justify-center` on mobile clipped the top of the first
+              // link ("About") whenever the stacked-to-one-column content
+              // (links + actions + showreel + newsletter) was taller than
+              // the viewport — centering overflowing flex content lets the
+              // start edge run past the container's top, and that portion
+              // isn't reachable by scrolling. Desktop content reliably
+              // fits one screen (that's the whole point of the two-column
+              // layout), so centering stays there; mobile falls back to
+              // top-aligned + normal scroll.
+              className="no-scrollbar mx-auto flex h-full w-full max-w-[1180px] flex-col justify-start overflow-y-auto px-6 py-24 md:justify-center md:px-8"
               initial={shouldReduceMotion ? undefined : "hidden"}
               animate={shouldReduceMotion ? undefined : "visible"}
               exit={shouldReduceMotion ? undefined : "hidden"}
