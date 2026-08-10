@@ -15,6 +15,7 @@ export type ProfileData = {
   };
   location: string;
   resumeUrl: string;
+  showreelUrl: string | null;
   valueProposition: string;
   quickFacts: {
     focus: string;
@@ -97,6 +98,7 @@ const DEFAULT_PROFILE = {
   linkedinUrl: "https://linkedin.com",
   location: "Your City, Country",
   resumeUrl: "/files/resume.pdf",
+  showreelUrl: null,
   valueProposition: "Add your value proposition in /admin/profile",
   focusText: "Add in /admin/profile",
   currentlyText: "Add in /admin/profile",
@@ -128,6 +130,7 @@ export async function getProfile(): Promise<ProfileData> {
     },
     location: row.location,
     resumeUrl: row.resumeUrl,
+    showreelUrl: row.showreelUrl,
     valueProposition: row.valueProposition,
     quickFacts: {
       focus: row.focusText,
@@ -161,6 +164,10 @@ export async function getProjects(): Promise<ProjectData[]> {
     image: row.imageUrl,
     hasCaseStudy: row.hasCaseStudy,
   }));
+}
+
+export async function getProjectCount(): Promise<number> {
+  return prisma.project.count({ where: { published: true } });
 }
 
 export async function getProjectBySlug(slug: string): Promise<ProjectCaseStudy | null> {

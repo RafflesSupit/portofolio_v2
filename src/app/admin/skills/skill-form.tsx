@@ -16,9 +16,14 @@ export function SkillForm(props: Props) {
   const action =
     props.mode === "edit" ? updateSkillCategory.bind(null, props.id) : createSkillCategory;
   const [state, formAction, pending] = useActionState(action, initialState);
+  // Echo the just-submitted values back as defaults on failure, and remount
+  // the form (via key) so React actually picks them up — React resets
+  // uncontrolled fields once the action settles, so without this a failed
+  // create would look like it wiped everything the admin typed.
+  const values = state.values;
 
   return (
-    <form action={formAction} className="max-w-xl space-y-5">
+    <form key={state.submittedAt ?? "initial"} action={formAction} className="max-w-xl space-y-5">
       <div>
         <label className="block text-body-sm text-text-2" htmlFor="category">
           Nama kategori
@@ -26,7 +31,7 @@ export function SkillForm(props: Props) {
         <input
           id="category"
           name="category"
-          defaultValue={props.defaultCategory}
+          defaultValue={values?.category ?? props.defaultCategory}
           required
           className={inputClass}
         />
@@ -38,7 +43,7 @@ export function SkillForm(props: Props) {
         <textarea
           id="items"
           name="items"
-          defaultValue={props.defaultItems}
+          defaultValue={values?.items ?? props.defaultItems}
           required
           rows={3}
           className={inputClass}

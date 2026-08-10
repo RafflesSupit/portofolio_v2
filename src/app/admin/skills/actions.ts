@@ -4,13 +4,18 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { extractFormValues } from "@/lib/form-values";
 
 const skillSchema = z.object({
   category: z.string().min(1),
   items: z.string().min(1),
 });
 
-export type SkillFormState = { error?: string };
+export type SkillFormState = {
+  error?: string;
+  values?: Record<string, string>;
+  submittedAt?: number;
+};
 
 function parseItems(items: string) {
   return items
@@ -24,7 +29,9 @@ export async function createSkillCategory(
   formData: FormData,
 ): Promise<SkillFormState> {
   const parsed = skillSchema.safeParse(Object.fromEntries(formData.entries()));
-  if (!parsed.success) return { error: "Data tidak valid." };
+  if (!parsed.success) {
+    return { error: "Data tidak valid.", values: extractFormValues(formData), submittedAt: Date.now() };
+  }
 
   const max = await prisma.skillCategory.aggregate({ _max: { order: true } });
   await prisma.skillCategory.create({
@@ -46,7 +53,9 @@ export async function updateSkillCategory(
   formData: FormData,
 ): Promise<SkillFormState> {
   const parsed = skillSchema.safeParse(Object.fromEntries(formData.entries()));
-  if (!parsed.success) return { error: "Data tidak valid." };
+  if (!parsed.success) {
+    return { error: "Data tidak valid.", values: extractFormValues(formData), submittedAt: Date.now() };
+  }
 
   await prisma.skillCategory.update({
     where: { id },

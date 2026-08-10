@@ -18,6 +18,7 @@ const profileSchema = z.object({
   linkedinUrl: z.string().url(),
   location: z.string().min(1),
   resumeUrl: z.string().min(1),
+  showreelUrl: z.string().optional(),
   focusText: z.string().min(1),
   currentlyText: z.string().min(1),
   openToText: z.string().min(1),
@@ -46,8 +47,14 @@ export async function updateProfile(
     resumeUrl = await uploadToR2(resumeFile, "resume");
   }
 
+  let showreelUrl: string | null = parsed.data.showreelUrl?.trim() || null;
+  const showreelFile = formData.get("showreel");
+  if (showreelFile instanceof File && showreelFile.size > 0) {
+    showreelUrl = await uploadToR2(showreelFile, "showreel");
+  }
+
   const existing = await prisma.profile.findFirst();
-  const data = { ...parsed.data, bio, resumeUrl };
+  const data = { ...parsed.data, bio, resumeUrl, showreelUrl };
 
   if (existing) {
     await prisma.profile.update({ where: { id: existing.id }, data });

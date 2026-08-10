@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { uploadToR2 } from "@/lib/r2";
+import { extractFormValues } from "@/lib/form-values";
 
 const projectSchema = z.object({
   slug: z
@@ -27,7 +28,11 @@ const projectSchema = z.object({
   result: z.string().optional(),
 });
 
-export type ProjectFormState = { error?: string };
+export type ProjectFormState = {
+  error?: string;
+  values?: Record<string, string>;
+  submittedAt?: number;
+};
 
 function parseLines(value: string) {
   return value
@@ -64,7 +69,11 @@ export async function createProject(
 ): Promise<ProjectFormState> {
   const parsed = projectSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Data tidak valid." };
+    return {
+      error: parsed.error.issues[0]?.message ?? "Data tidak valid.",
+      values: extractFormValues(formData),
+      submittedAt: Date.now(),
+    };
   }
 
   let imageUrl: string;
@@ -73,7 +82,11 @@ export async function createProject(
     imageUrl = await resolveImageUrl(formData);
     gallery = await resolveGalleryUrls(formData, []);
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Upload gambar gagal." };
+    return {
+      error: error instanceof Error ? error.message : "Upload gambar gagal.",
+      values: extractFormValues(formData),
+      submittedAt: Date.now(),
+    };
   }
 
   const max = await prisma.project.aggregate({ _max: { order: true } });
@@ -102,7 +115,11 @@ export async function createProject(
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return { error: "Slug sudah dipakai project lain." };
+      return {
+        error: "Slug sudah dipakai project lain.",
+        values: extractFormValues(formData),
+        submittedAt: Date.now(),
+      };
     }
     throw error;
   }
@@ -119,11 +136,17 @@ export async function updateProject(
 ): Promise<ProjectFormState> {
   const parsed = projectSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Data tidak valid." };
+    return {
+      error: parsed.error.issues[0]?.message ?? "Data tidak valid.",
+      values: extractFormValues(formData),
+      submittedAt: Date.now(),
+    };
   }
 
   const existing = await prisma.project.findUnique({ where: { id } });
-  if (!existing) return { error: "Project tidak ditemukan." };
+  if (!existing) {
+    return { error: "Project tidak ditemukan.", values: extractFormValues(formData), submittedAt: Date.now() };
+  }
 
   let imageUrl: string;
   let gallery: string[];
@@ -131,7 +154,11 @@ export async function updateProject(
     imageUrl = await resolveImageUrl(formData, existing.imageUrl);
     gallery = await resolveGalleryUrls(formData, existing.gallery);
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Upload gambar gagal." };
+    return {
+      error: error instanceof Error ? error.message : "Upload gambar gagal.",
+      values: extractFormValues(formData),
+      submittedAt: Date.now(),
+    };
   }
 
   try {
@@ -158,7 +185,11 @@ export async function updateProject(
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return { error: "Slug sudah dipakai project lain." };
+      return {
+        error: "Slug sudah dipakai project lain.",
+        values: extractFormValues(formData),
+        submittedAt: Date.now(),
+      };
     }
     throw error;
   }

@@ -47,12 +47,22 @@ export function CardMedia({
   monogram,
   aspect = "video",
   className,
+  sizes = "(min-width: 768px) 50vw, 100vw",
+  grayscaleHover = false,
+  onError,
+  children,
 }: {
   src?: string;
   alt?: string;
   monogram?: string;
   aspect?: "video" | "square" | "portrait";
   className?: string;
+  sizes?: string;
+  /** Image renders desaturated at rest, full color on card hover — the khasiyev.com-style gallery treatment. */
+  grayscaleHover?: boolean;
+  /** Called in addition to the built-in monogram fallback, so a caller can retry a different `src` (e.g. thumbnail -> full image) before giving up. */
+  onError?: () => void;
+  children?: ReactNode;
 }) {
   const [errored, setErrored] = useState(false);
   const showFallback = !src || errored;
@@ -77,11 +87,18 @@ export function CardMedia({
           src={src}
           alt={alt}
           fill
-          sizes="(min-width: 768px) 50vw, 100vw"
-          onError={() => setErrored(true)}
-          className="object-cover transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04]"
+          sizes={sizes}
+          onError={() => {
+            setErrored(true);
+            onError?.();
+          }}
+          className={cn(
+            "object-cover transition-[transform,filter] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04]",
+            grayscaleHover && "grayscale-[0.85] contrast-[1.05] group-hover:grayscale-0",
+          )}
         />
       )}
+      {children}
     </div>
   );
 }

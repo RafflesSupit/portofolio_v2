@@ -15,9 +15,14 @@ type Props =
 export function FaqForm(props: Props) {
   const action = props.mode === "edit" ? updateFaqItem.bind(null, props.id) : createFaqItem;
   const [state, formAction, pending] = useActionState(action, initialState);
+  // Echo the just-submitted values back as defaults on failure, and remount
+  // the form (via key) so React actually picks them up — React resets
+  // uncontrolled fields once the action settles, so without this a failed
+  // create would look like it wiped everything the admin typed.
+  const values = state.values;
 
   return (
-    <form action={formAction} className="max-w-xl space-y-5">
+    <form key={state.submittedAt ?? "initial"} action={formAction} className="max-w-xl space-y-5">
       <div>
         <label className="block text-body-sm text-text-2" htmlFor="question">
           Pertanyaan
@@ -25,7 +30,7 @@ export function FaqForm(props: Props) {
         <input
           id="question"
           name="question"
-          defaultValue={props.defaultQuestion}
+          defaultValue={values?.question ?? props.defaultQuestion}
           required
           className={inputClass}
         />
@@ -37,7 +42,7 @@ export function FaqForm(props: Props) {
         <textarea
           id="answer"
           name="answer"
-          defaultValue={props.defaultAnswer}
+          defaultValue={values?.answer ?? props.defaultAnswer}
           required
           rows={4}
           className={inputClass}

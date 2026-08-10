@@ -26,6 +26,7 @@ model Profile {
   linkedinUrl String
   location    String
   resumeUrl   String
+  showreelUrl String?
   focusText     String @default("Backend & Microservices")
   currentlyText String @default("IT Business Integration Intern @ Alfamart")
   openToText    String @default("Full-time backend roles")
@@ -86,6 +87,14 @@ model FaqItem {
   question String
   answer   String
   order    Int    @default(0)
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  firstName String
+  lastName  String
+  createdAt DateTime @default(now())
 }
 
 model ContactMessage {

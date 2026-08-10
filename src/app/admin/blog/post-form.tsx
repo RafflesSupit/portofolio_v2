@@ -35,22 +35,41 @@ export function PostForm(props: Props) {
   const defaults = props.mode === "edit" ? props : emptyDefaults;
   const action = props.mode === "edit" ? updatePost.bind(null, props.id) : createPost;
   const [state, formAction, pending] = useActionState(action, initialState);
-  const [content, setContent] = useState(defaults.content);
+  // A failed submission resolves the action, and React resets uncontrolled
+  // fields once it does — so this echoes the just-submitted values back as
+  // the new defaults. Keying the form on the attempt forces React to
+  // remount it with those defaults instead of leaving the reset (blank)
+  // DOM values in place, which is what made a failed create look like it
+  // had wiped the form.
+  const values = state.values;
+  const [content, setContent] = useState(values?.content ?? defaults.content);
 
   return (
-    <form action={formAction} className="max-w-4xl space-y-5">
+    <form key={state.submittedAt ?? "initial"} action={formAction} className="max-w-4xl space-y-5">
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <label className="block text-body-sm text-text-2" htmlFor="slug">
             Slug (unik, huruf kecil, dash)
           </label>
-          <input id="slug" name="slug" defaultValue={defaults.slug} required className={inputClass} />
+          <input
+            id="slug"
+            name="slug"
+            defaultValue={values?.slug ?? defaults.slug}
+            required
+            className={inputClass}
+          />
         </div>
         <div>
           <label className="block text-body-sm text-text-2" htmlFor="title">
             Judul
           </label>
-          <input id="title" name="title" defaultValue={defaults.title} required className={inputClass} />
+          <input
+            id="title"
+            name="title"
+            defaultValue={values?.title ?? defaults.title}
+            required
+            className={inputClass}
+          />
         </div>
       </div>
 
@@ -61,7 +80,7 @@ export function PostForm(props: Props) {
         <textarea
           id="excerpt"
           name="excerpt"
-          defaultValue={defaults.excerpt}
+          defaultValue={values?.excerpt ?? defaults.excerpt}
           required
           rows={2}
           className={inputClass}
@@ -72,7 +91,7 @@ export function PostForm(props: Props) {
         <label className="block text-body-sm text-text-2" htmlFor="tags">
           Tags (pisahkan dengan koma)
         </label>
-        <input id="tags" name="tags" defaultValue={defaults.tags} className={inputClass} />
+        <input id="tags" name="tags" defaultValue={values?.tags ?? defaults.tags} className={inputClass} />
       </div>
 
       <div>
@@ -120,7 +139,7 @@ export function PostForm(props: Props) {
           id="published"
           name="published"
           type="checkbox"
-          defaultChecked={defaults.published}
+          defaultChecked={values ? values.published === "on" : defaults.published}
           className="h-4 w-4 rounded border-border"
         />
         <label className="text-body-sm text-text-2" htmlFor="published">

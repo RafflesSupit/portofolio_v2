@@ -1,102 +1,80 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { AnimatePresence, motion, useMotionValue, useSpring } from "framer-motion";
-import Image from "next/image";
+import { useState } from "react";
 import type { ProjectData } from "@/lib/queries";
 import { Reveal } from "@/components/ui/reveal";
 import { Card, CardBody, CardMedia } from "@/components/ui/card";
 import { toThumbnailUrl } from "@/lib/image-url";
 
-export function ProjectList({ projects }: { projects: ProjectData[] }) {
-  const [hovered, setHovered] = useState<string | null>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
-
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const springX = useSpring(x, { damping: 22, stiffness: 260, mass: 0.6 });
-  const springY = useSpring(y, { damping: 22, stiffness: 260, mass: 0.6 });
-
-  function handleMove(e: React.MouseEvent) {
-    const stage = stageRef.current;
-    if (!stage) return;
-    const rect = stage.getBoundingClientRect();
-    x.set(e.clientX - rect.left);
-    y.set(e.clientY - rect.top);
-  }
-
-  const active = projects.find((p) => p.slug === hovered) ?? null;
-
+export function ProjectList({
+  projects,
+  numbered = false,
+}: {
+  projects: ProjectData[];
+  /** Shows a "01", "02"... badge on each card — the editorial-studio grid pattern. */
+  numbered?: boolean;
+}) {
   return (
-    <div ref={stageRef} onMouseMove={handleMove} className="relative">
-      <div className="hover-image-stage pointer-events-none absolute inset-0">
-        <AnimatePresence>
-          {active ? (
-            <motion.div
-              key={active.slug}
-              className="absolute z-10 h-64 w-48 overflow-hidden rounded-lg shadow-[var(--shadow-strong)] sm:h-72 sm:w-56"
-              style={{ x: springX, y: springY, translateX: "-50%", translateY: "-50%" }}
-              initial={{ opacity: 0, scale: 0.85 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.85 }}
-              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <HoverPreviewImage src={active.image} />
-              <div
-                className="absolute inset-0"
-                style={{ background: "rgba(14, 124, 134, 0.35)", mixBlendMode: "color" }}
-              />
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        {projects.map((project, i) => (
-          <Reveal key={project.slug} delay={i * 0.05}>
-            <ProjectCard
-              project={project}
-              onEnter={() => setHovered(project.slug)}
-              onLeave={() => setHovered((cur) => (cur === project.slug ? null : cur))}
-            />
-          </Reveal>
-        ))}
-      </div>
+    <div className="grid gap-6 md:grid-cols-2">
+      {projects.map((project, i) => (
+        <Reveal key={project.slug} delay={i * 0.05}>
+          <ProjectCard project={project} number={numbered ? i + 1 : undefined} />
+        </Reveal>
+      ))}
     </div>
   );
 }
 
 /**
- * Uses the small `-thumb` variant uploadToR2 generates instead of the full
- * ~1920px project image, since this preview only ever renders at 224px.
- * Falls back to the full image on error for projects uploaded before
- * thumbnails existed, which have no `-thumb` companion file in R2.
+ * Renders the `-thumb` variant uploadToR2 generates (see lib/r2.ts) instead
+ * of the full ~1920px project image, since the grid only ever displays this
+ * at roughly card width (~half the 1180px container). Falls back to the
+ * full image on error for projects uploaded before thumbnails existed.
  */
-function HoverPreviewImage({ src }: { src: string }) {
+function ProjectMedia({
+  project,
+  monogram,
+  number,
+}: {
+  project: ProjectData;
+  monogram: string;
+  number?: number;
+}) {
   const [thumbFailed, setThumbFailed] = useState(false);
+  const src = thumbFailed ? project.image : toThumbnailUrl(project.image);
 
   return (
-    <Image
-      src={thumbFailed ? src : toThumbnailUrl(src)}
+    <CardMedia
+      key={src}
+      src={src}
       alt=""
-      fill
-      sizes="224px"
-      className="object-cover"
-      style={{ filter: "grayscale(1) contrast(1.05)" }}
+      monogram={monogram}
+      grayscaleHover
       onError={() => setThumbFailed(true)}
-    />
+    >
+      {number !== undefined ? (
+        <span
+          aria-hidden="true"
+          className="absolute left-4 top-4 font-mono text-caption text-white/80"
+        >
+          {String(number).padStart(2, "0")}
+        </span>
+      ) : null}
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-black/70 to-transparent p-4 pt-10 transition-transform duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-y-0"
+        aria-hidden="true"
+      >
+        <p className="text-meta text-white/90">
+          {project.type}
+          <span className="mx-1.5">·</span>
+          {project.year}
+        </p>
+      </div>
+    </CardMedia>
   );
 }
 
-function ProjectCard({
-  project,
-  onEnter,
-  onLeave,
-}: {
-  project: ProjectData;
-  onEnter: () => void;
-  onLeave: () => void;
-}) {
+function ProjectCard({ project, number }: { project: ProjectData; number?: number }) {
   const monogram = project.title
     .split(" ")
     .map((w) => w[0])
@@ -108,8 +86,8 @@ function ProjectCard({
     : { href: project.href, target: "_blank" as const, rel: "noreferrer" };
 
   return (
-    <Card {...linkProps} onMouseEnter={onEnter} onMouseLeave={onLeave} data-cursor-hover>
-      <CardMedia monogram={monogram} />
+    <Card {...linkProps} data-cursor-hover data-cursor-label="View">
+      <ProjectMedia project={project} monogram={monogram} number={number} />
 
       <CardBody>
         <p className="text-meta text-text-3">

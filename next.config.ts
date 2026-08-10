@@ -17,7 +17,11 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      bodySizeLimit: "10mb",
+      // Bumped from 10mb for showreel video uploads (see admin/profile).
+      // Note: Vercel's own serverless request-body ceiling is lower than
+      // this regardless of what's configured here, so a large video may
+      // still need to be uploaded to R2 manually with the URL pasted in.
+      bodySizeLimit: "50mb",
     },
   },
   allowedDevOrigins: ['192.168.1.21'],

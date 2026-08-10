@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { extractFormValues } from "@/lib/form-values";
 
 const experienceSchema = z.object({
   role: z.string().min(1),
@@ -12,7 +13,11 @@ const experienceSchema = z.object({
   points: z.string().min(1),
 });
 
-export type ExperienceFormState = { error?: string };
+export type ExperienceFormState = {
+  error?: string;
+  values?: Record<string, string>;
+  submittedAt?: number;
+};
 
 function parsePoints(points: string) {
   return points
@@ -26,7 +31,9 @@ export async function createExperienceItem(
   formData: FormData,
 ): Promise<ExperienceFormState> {
   const parsed = experienceSchema.safeParse(Object.fromEntries(formData.entries()));
-  if (!parsed.success) return { error: "Data tidak valid." };
+  if (!parsed.success) {
+    return { error: "Data tidak valid.", values: extractFormValues(formData), submittedAt: Date.now() };
+  }
 
   const max = await prisma.experienceItem.aggregate({ _max: { order: true } });
   await prisma.experienceItem.create({
@@ -50,7 +57,9 @@ export async function updateExperienceItem(
   formData: FormData,
 ): Promise<ExperienceFormState> {
   const parsed = experienceSchema.safeParse(Object.fromEntries(formData.entries()));
-  if (!parsed.success) return { error: "Data tidak valid." };
+  if (!parsed.success) {
+    return { error: "Data tidak valid.", values: extractFormValues(formData), submittedAt: Date.now() };
+  }
 
   await prisma.experienceItem.update({
     where: { id },

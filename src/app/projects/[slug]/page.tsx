@@ -1,12 +1,14 @@
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import type { Metadata } from "next";
 import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { ProjectGallery } from "@/components/project-gallery";
+import { CaseStudyHeroImage } from "@/components/case-study-hero-image";
 import { Button } from "@/components/ui/button";
-import { SectionLabel } from "@/components/ui/section-label";
-import { getProfile, getProjectBySlug } from "@/lib/queries";
+import { SpecLabel } from "@/components/ui/spec-label";
+import { RegistrationMark } from "@/components/ui/registration-mark";
+import { Reveal } from "@/components/ui/reveal";
+import { getProfile, getProjectBySlug, getProjectCount } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -31,97 +33,96 @@ export default async function ProjectCaseStudyPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [profile, project] = await Promise.all([getProfile(), getProjectBySlug(slug)]);
+  const [profile, project, projectCount] = await Promise.all([
+    getProfile(),
+    getProjectBySlug(slug),
+    getProjectCount(),
+  ]);
 
   if (!project || !project.hasCaseStudy) notFound();
 
+  const story = [
+    { index: 1, label: "Challenge", text: project.challenge },
+    { index: 2, label: "Solution", text: project.solution },
+    { index: 3, label: "Result", text: project.result },
+  ].filter((s): s is { index: number; label: string; text: string } => Boolean(s.text));
+
   return (
     <>
-      <Nav profile={profile} />
+      <Nav profile={profile} projectCount={projectCount} />
       <main id="main-content" className="flex-1">
-        <section className="px-6 pb-16 pt-28 md:px-8 md:pt-36">
-          <div className="mx-auto max-w-[1180px]">
-            <SectionLabel>{`${project.type} · ${project.role} · ${project.year}`}</SectionLabel>
-            <h1 className="text-display-l mt-4 max-w-[20ch] text-ink">{project.title}</h1>
-            <p className="mt-5 max-w-[65ch] text-body-lg text-text-2">{project.description}</p>
-
-            <div className="mt-8 flex flex-wrap gap-2">
-              {project.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="text-caption rounded-full border border-border bg-surface-2 px-2.5 py-1 text-text-2"
-                >
-                  {tag}
-                </span>
-              ))}
+        <div className="relative">
+          <CaseStudyHeroImage src={project.image} alt={project.title} />
+          <RegistrationMark position="top-right" className="text-hero-ink" />
+          <div className="absolute inset-x-0 bottom-0 px-6 pb-10 md:px-8 md:pb-16">
+            <div className="mx-auto max-w-[1400px]">
+              <SpecLabel inverse>{`${project.type} · ${project.role} · ${project.year}`}</SpecLabel>
+              <h1 className="text-display-xl mt-4 max-w-[20ch] text-hero-ink">{project.title}</h1>
             </div>
-
-            <div className="mt-8">
-              <Button href={project.href} target="_blank" rel="noreferrer" variant="solid">
-                View live / repo
-              </Button>
-            </div>
-          </div>
-        </section>
-
-        <div className="px-6 md:px-8">
-          <div className="relative mx-auto aspect-video max-w-[1180px] overflow-hidden rounded-lg border border-border">
-            <Image
-              src={project.image}
-              alt={project.title}
-              fill
-              sizes="(min-width: 1180px) 1180px, 100vw"
-              className="object-cover"
-              priority
-            />
           </div>
         </div>
 
-        {project.challenge || project.solution || project.result ? (
-          <section className="border-t border-border px-6 py-20 md:px-8 md:py-28">
-            <div className="mx-auto grid max-w-[1180px] gap-12 md:grid-cols-3">
-              {project.challenge ? (
-                <div>
-                  <p className="text-caption text-text-3">Challenge</p>
-                  <p className="mt-3 text-body text-text-2">{project.challenge}</p>
-                </div>
-              ) : null}
-              {project.solution ? (
-                <div>
-                  <p className="text-caption text-text-3">Solution</p>
-                  <p className="mt-3 text-body text-text-2">{project.solution}</p>
-                </div>
-              ) : null}
-              {project.result ? (
-                <div>
-                  <p className="text-caption text-text-3">Result</p>
-                  <p className="mt-3 text-body text-text-2">{project.result}</p>
-                </div>
-              ) : null}
-            </div>
-          </section>
-        ) : null}
+        <div className="mx-auto max-w-[1400px] px-6 py-20 md:px-8 md:py-28">
+          <div className="grid gap-12 md:grid-cols-[280px_1fr] md:gap-16">
+            <aside className="space-y-8 md:sticky md:top-28 md:h-fit">
+              <Reveal>
+                <p className="text-caption text-text-3">Overview</p>
+                <p className="mt-3 text-body text-text-2">{project.description}</p>
+              </Reveal>
 
-        {project.highlights.length > 0 ? (
-          <section className="border-t border-border px-6 py-20 md:px-8 md:py-28">
-            <div className="mx-auto max-w-[1180px]">
-              <p className="text-caption text-text-3">Highlights</p>
-              <ul className="mt-4 space-y-2.5">
-                {project.highlights.map((h, i) => (
-                  <li key={i} className="flex gap-3 text-body text-text-2">
-                    <span className="mt-2.5 h-1 w-1 shrink-0 rounded-full bg-accent" aria-hidden="true" />
-                    <span>{h}</span>
-                  </li>
-                ))}
-              </ul>
+              <Reveal delay={0.05}>
+                <div className="flex flex-wrap gap-2">
+                  {project.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="text-caption rounded-full border border-border bg-surface-2 px-2.5 py-1 text-text-2"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </Reveal>
+
+              <Reveal delay={0.1}>
+                <Button href={project.href} target="_blank" rel="noreferrer" variant="solid">
+                  View live / repo
+                </Button>
+              </Reveal>
+            </aside>
+
+            <div className="space-y-20 md:space-y-28">
+              {story.map((section) => (
+                <Reveal key={section.label}>
+                  <SpecLabel index={section.index}>{section.label}</SpecLabel>
+                  <p className="mt-4 max-w-[65ch] text-h4 font-normal text-text-2">{section.text}</p>
+                </Reveal>
+              ))}
+
+              {project.highlights.length > 0 ? (
+                <Reveal>
+                  <SpecLabel index={story.length + 1}>Highlights</SpecLabel>
+                  <ul className="mt-4 space-y-3">
+                    {project.highlights.map((h, i) => (
+                      <li key={i} className="flex gap-3 text-body text-text-2">
+                        <span className="mt-1 font-mono text-caption text-accent-ink">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        <span>{h}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </Reveal>
+              ) : null}
             </div>
-          </section>
-        ) : null}
+          </div>
+        </div>
 
         {project.gallery.length > 0 ? (
           <section className="border-t border-border px-6 py-20 md:px-8 md:py-28">
-            <div className="mx-auto max-w-[1180px]">
-              <p className="text-caption mb-6 text-text-3">Gallery</p>
+            <div className="mx-auto max-w-[1400px]">
+              <SpecLabel index={story.length + (project.highlights.length > 0 ? 2 : 1)} className="mb-6">
+                Gallery
+              </SpecLabel>
               <ProjectGallery images={project.gallery} alt={project.title} />
             </div>
           </section>

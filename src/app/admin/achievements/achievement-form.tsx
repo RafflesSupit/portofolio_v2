@@ -31,21 +31,38 @@ type Props =
 export function AchievementForm(props: Props) {
   const action = props.mode === "edit" ? updateAchievement.bind(null, props.id) : createAchievement;
   const [state, formAction, pending] = useActionState(action, initialState);
+  // Echo the just-submitted values back as defaults on failure, and remount
+  // the form (via key) so React actually picks them up — React resets
+  // uncontrolled fields once the action settles, so without this a failed
+  // create would look like it wiped everything the admin typed.
+  const values = state.values;
 
   return (
-    <form action={formAction} className="max-w-xl space-y-5">
+    <form key={state.submittedAt ?? "initial"} action={formAction} className="max-w-xl space-y-5">
       <div>
         <label className="block text-body-sm text-text-2" htmlFor="title">
           Judul
         </label>
-        <input id="title" name="title" defaultValue={props.defaultTitle} required className={inputClass} />
+        <input
+          id="title"
+          name="title"
+          defaultValue={values?.title ?? props.defaultTitle}
+          required
+          className={inputClass}
+        />
       </div>
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <label className="block text-body-sm text-text-2" htmlFor="issuer">
             Penerbit
           </label>
-          <input id="issuer" name="issuer" defaultValue={props.defaultIssuer} required className={inputClass} />
+          <input
+            id="issuer"
+            name="issuer"
+            defaultValue={values?.issuer ?? props.defaultIssuer}
+            required
+            className={inputClass}
+          />
         </div>
         <div>
           <label className="block text-body-sm text-text-2" htmlFor="date">
@@ -54,7 +71,7 @@ export function AchievementForm(props: Props) {
           <input
             id="date"
             name="date"
-            defaultValue={props.defaultDate}
+            defaultValue={values?.date ?? props.defaultDate}
             required
             placeholder="2026"
             className={inputClass}
@@ -65,7 +82,13 @@ export function AchievementForm(props: Props) {
         <label className="block text-body-sm text-text-2" htmlFor="url">
           URL sertifikat/bukti (opsional)
         </label>
-        <input id="url" name="url" type="url" defaultValue={props.defaultUrl} className={inputClass} />
+        <input
+          id="url"
+          name="url"
+          type="url"
+          defaultValue={values?.url ?? props.defaultUrl}
+          className={inputClass}
+        />
       </div>
       <div>
         <label className="block text-body-sm text-text-2" htmlFor="description">
@@ -74,7 +97,7 @@ export function AchievementForm(props: Props) {
         <textarea
           id="description"
           name="description"
-          defaultValue={props.defaultDescription}
+          defaultValue={values?.description ?? props.defaultDescription}
           rows={3}
           className={inputClass}
         />

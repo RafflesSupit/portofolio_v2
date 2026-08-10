@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { extractFormValues } from "@/lib/form-values";
 
 const achievementSchema = z.object({
   title: z.string().min(1),
@@ -13,14 +14,20 @@ const achievementSchema = z.object({
   description: z.string().optional().or(z.literal("")),
 });
 
-export type AchievementFormState = { error?: string };
+export type AchievementFormState = {
+  error?: string;
+  values?: Record<string, string>;
+  submittedAt?: number;
+};
 
 export async function createAchievement(
   _prevState: AchievementFormState,
   formData: FormData,
 ): Promise<AchievementFormState> {
   const parsed = achievementSchema.safeParse(Object.fromEntries(formData.entries()));
-  if (!parsed.success) return { error: "Data tidak valid." };
+  if (!parsed.success) {
+    return { error: "Data tidak valid.", values: extractFormValues(formData), submittedAt: Date.now() };
+  }
 
   const max = await prisma.achievement.aggregate({ _max: { order: true } });
   await prisma.achievement.create({
@@ -45,7 +52,9 @@ export async function updateAchievement(
   formData: FormData,
 ): Promise<AchievementFormState> {
   const parsed = achievementSchema.safeParse(Object.fromEntries(formData.entries()));
-  if (!parsed.success) return { error: "Data tidak valid." };
+  if (!parsed.success) {
+    return { error: "Data tidak valid.", values: extractFormValues(formData), submittedAt: Date.now() };
+  }
 
   await prisma.achievement.update({
     where: { id },

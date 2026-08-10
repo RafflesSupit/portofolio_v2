@@ -100,6 +100,33 @@ export function ProfileForm({ profile }: { profile: ProfileData }) {
         <input id="resume" name="resume" type="file" accept="application/pdf" className="mt-2 block w-full text-body-sm text-text-2" />
       </div>
 
+      <div>
+        <label className="block text-body-sm text-text-2" htmlFor="showreelUrl">
+          URL video showreel (opsional — kosongkan kalau belum ada, tombol Showreel di header akan
+          disembunyikan)
+        </label>
+        <input
+          id="showreelUrl"
+          name="showreelUrl"
+          defaultValue={profile.showreelUrl ?? ""}
+          className={inputClass}
+        />
+      </div>
+      <div>
+        <label className="block text-body-sm text-text-2" htmlFor="showreel">
+          Upload video showreel (opsional, kosongkan jika tidak ganti). File besar mungkin gagal
+          lewat form ini di Vercel — kalau videonya besar, upload manual ke R2 lalu tempel URL-nya
+          di field di atas.
+        </label>
+        <input
+          id="showreel"
+          name="showreel"
+          type="file"
+          accept="video/*"
+          className="mt-2 block w-full text-body-sm text-text-2"
+        />
+      </div>
+
       <div className="rounded-lg border border-border bg-surface-2 p-4">
         <p className="text-body-sm font-medium text-ink">Quick facts (bar di bawah hero)</p>
         <div className="mt-3 grid gap-4 sm:grid-cols-2">

@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { useSafeReducedMotion } from "@/lib/use-safe-reduced-motion";
 
+const EASE = [0.16, 1, 0.3, 1] as const;
+
 export function Reveal({
   children,
   delay = 0,
@@ -32,7 +34,7 @@ export function Reveal({
       transition={{
         duration: 0.7,
         delay,
-        ease: [0.16, 1, 0.3, 1],
+        ease: EASE,
       }}
     >
       {children}
@@ -78,7 +80,7 @@ export const revealItemVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const },
+    transition: { duration: 0.6, ease: EASE },
   },
 };
 

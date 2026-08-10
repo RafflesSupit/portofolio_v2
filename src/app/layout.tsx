@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
+import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import { Cursor } from "@/components/ui/cursor";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+// Serif display face — free stand-in for PP Migra (the reference's paid
+// heading typeface). Pairs a sans body with a serif display, the actual
+// character of the estrela.studio reference, instead of an all-sans pairing.
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
-  weight: ["500", "700"],
+  weight: ["500", "600", "700"],
 });
 
 const inter = Inter({
@@ -54,18 +57,6 @@ export const metadata: Metadata = {
   },
 };
 
-const noFlashScript = `
-(function () {
-  try {
-    var stored = localStorage.getItem('theme');
-    var theme = stored === 'light' || stored === 'dark'
-      ? stored
-      : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    document.documentElement.setAttribute('data-theme', theme);
-  } catch (e) {}
-})();
-`;
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -74,12 +65,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
-      suppressHydrationWarning
+      data-scroll-behavior="smooth"
+      className={`${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: noFlashScript }} />
-      </head>
       <body className="min-h-full flex flex-col bg-bg text-ink font-body">
         <a
           href="#main-content"

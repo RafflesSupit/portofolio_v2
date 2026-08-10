@@ -1,37 +1,24 @@
 import { Nav } from "@/components/nav";
 import { Hero } from "@/components/hero";
-import { QuickFacts } from "@/components/quick-facts";
-import { About } from "@/components/about";
+import { Intro } from "@/components/intro";
+import { Journey } from "@/components/journey";
 import { Experience } from "@/components/experience";
-import { Achievements } from "@/components/achievements";
 import { Projects } from "@/components/projects";
-import { LatestPosts } from "@/components/latest-posts";
 import { Faq } from "@/components/faq";
 import { Contact } from "@/components/contact";
 import { Footer } from "@/components/footer";
-import {
-  getProfile,
-  getSkills,
-  getProjects,
-  getExperienceItems,
-  getAchievements,
-  getFaqItems,
-  getPublishedPosts,
-} from "@/lib/queries";
+import { getProfile, getProjects, getExperienceItems, getFaqItems } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
 const siteUrl = "https://rafflessupit.dev";
 
 export default async function Home() {
-  const [profile, skills, projects, experience, achievements, faqItems, posts] = await Promise.all([
+  const [profile, projects, experience, faqItems] = await Promise.all([
     getProfile(),
-    getSkills(),
     getProjects(),
     getExperienceItems(),
-    getAchievements(),
     getFaqItems(),
-    getPublishedPosts(3),
   ]);
 
   const personJsonLd = {
@@ -50,15 +37,13 @@ export default async function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
       />
-      <Nav profile={profile} />
+      <Nav profile={profile} projectCount={projects.length} />
       <main id="main-content" className="flex-1">
         <Hero profile={profile} />
-        <QuickFacts profile={profile} />
-        <About profile={profile} skills={skills} />
-        <Experience items={experience} />
+        <Intro profile={profile} />
         <Projects projects={projects} />
-        <Achievements items={achievements} />
-        <LatestPosts posts={posts} />
+        <Journey />
+        <Experience items={experience} />
         <Faq items={faqItems} />
         <Contact profile={profile} />
       </main>

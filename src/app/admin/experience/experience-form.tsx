@@ -30,21 +30,38 @@ export function ExperienceForm(props: Props) {
   const action =
     props.mode === "edit" ? updateExperienceItem.bind(null, props.id) : createExperienceItem;
   const [state, formAction, pending] = useActionState(action, initialState);
+  // Echo the just-submitted values back as defaults on failure, and remount
+  // the form (via key) so React actually picks them up — React resets
+  // uncontrolled fields once the action settles, so without this a failed
+  // create would look like it wiped everything the admin typed.
+  const values = state.values;
 
   return (
-    <form action={formAction} className="max-w-xl space-y-5">
+    <form key={state.submittedAt ?? "initial"} action={formAction} className="max-w-xl space-y-5">
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <label className="block text-body-sm text-text-2" htmlFor="role">
             Posisi
           </label>
-          <input id="role" name="role" defaultValue={props.defaultRole} required className={inputClass} />
+          <input
+            id="role"
+            name="role"
+            defaultValue={values?.role ?? props.defaultRole}
+            required
+            className={inputClass}
+          />
         </div>
         <div>
           <label className="block text-body-sm text-text-2" htmlFor="org">
             Organisasi
           </label>
-          <input id="org" name="org" defaultValue={props.defaultOrg} required className={inputClass} />
+          <input
+            id="org"
+            name="org"
+            defaultValue={values?.org ?? props.defaultOrg}
+            required
+            className={inputClass}
+          />
         </div>
       </div>
 
@@ -55,7 +72,7 @@ export function ExperienceForm(props: Props) {
         <input
           id="period"
           name="period"
-          defaultValue={props.defaultPeriod}
+          defaultValue={values?.period ?? props.defaultPeriod}
           required
           placeholder="Sep 2025 - Aug 2026"
           className={inputClass}
@@ -69,7 +86,7 @@ export function ExperienceForm(props: Props) {
         <textarea
           id="points"
           name="points"
-          defaultValue={props.defaultPoints}
+          defaultValue={values?.points ?? props.defaultPoints}
           required
           rows={5}
           className={inputClass}

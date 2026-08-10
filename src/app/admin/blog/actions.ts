@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { uploadToR2 } from "@/lib/r2";
+import { extractFormValues } from "@/lib/form-values";
 
 const postSchema = z.object({
   slug: z
@@ -19,7 +20,11 @@ const postSchema = z.object({
   published: z.string().optional(),
 });
 
-export type PostFormState = { error?: string };
+export type PostFormState = {
+  error?: string;
+  values?: Record<string, string>;
+  submittedAt?: number;
+};
 
 function parseTags(value: string | undefined) {
   return (value ?? "")
@@ -45,7 +50,11 @@ export async function createPost(
 ): Promise<PostFormState> {
   const parsed = postSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Data tidak valid." };
+    return {
+      error: parsed.error.issues[0]?.message ?? "Data tidak valid.",
+      values: extractFormValues(formData),
+      submittedAt: Date.now(),
+    };
   }
 
   const coverImageUrl = await resolveCoverImageUrl(formData);
@@ -66,7 +75,11 @@ export async function createPost(
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return { error: "Slug sudah dipakai post lain." };
+      return {
+        error: "Slug sudah dipakai post lain.",
+        values: extractFormValues(formData),
+        submittedAt: Date.now(),
+      };
     }
     throw error;
   }
@@ -84,11 +97,17 @@ export async function updatePost(
 ): Promise<PostFormState> {
   const parsed = postSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Data tidak valid." };
+    return {
+      error: parsed.error.issues[0]?.message ?? "Data tidak valid.",
+      values: extractFormValues(formData),
+      submittedAt: Date.now(),
+    };
   }
 
   const existing = await prisma.post.findUnique({ where: { id } });
-  if (!existing) return { error: "Post tidak ditemukan." };
+  if (!existing) {
+    return { error: "Post tidak ditemukan.", values: extractFormValues(formData), submittedAt: Date.now() };
+  }
 
   const coverImageUrl = await resolveCoverImageUrl(formData, existing.coverImageUrl);
   const published = parsed.data.published === "on";
@@ -110,7 +129,11 @@ export async function updatePost(
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return { error: "Slug sudah dipakai post lain." };
+      return {
+        error: "Slug sudah dipakai post lain.",
+        values: extractFormValues(formData),
+        submittedAt: Date.now(),
+      };
     }
     throw error;
   }

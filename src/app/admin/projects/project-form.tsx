@@ -52,21 +52,38 @@ export function ProjectForm(props: Props) {
   const defaults = props.mode === "edit" ? props : emptyDefaults;
   const action = props.mode === "edit" ? updateProject.bind(null, props.id) : createProject;
   const [state, formAction, pending] = useActionState(action, initialState);
+  // Echo the just-submitted values back as defaults on failure, and remount
+  // the form (via key) so React actually picks them up — React resets
+  // uncontrolled fields once the action settles, so without this a failed
+  // create/update would look like it wiped everything the admin typed.
+  const values = state.values;
 
   return (
-    <form action={formAction} className="max-w-2xl space-y-5">
+    <form key={state.submittedAt ?? "initial"} action={formAction} className="max-w-2xl space-y-5">
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <label className="block text-body-sm text-text-2" htmlFor="slug">
             Slug (unik, huruf kecil, dash)
           </label>
-          <input id="slug" name="slug" defaultValue={defaults.slug} required className={inputClass} />
+          <input
+            id="slug"
+            name="slug"
+            defaultValue={values?.slug ?? defaults.slug}
+            required
+            className={inputClass}
+          />
         </div>
         <div>
           <label className="block text-body-sm text-text-2" htmlFor="title">
             Judul
           </label>
-          <input id="title" name="title" defaultValue={defaults.title} required className={inputClass} />
+          <input
+            id="title"
+            name="title"
+            defaultValue={values?.title ?? defaults.title}
+            required
+            className={inputClass}
+          />
         </div>
       </div>
 
@@ -75,19 +92,37 @@ export function ProjectForm(props: Props) {
           <label className="block text-body-sm text-text-2" htmlFor="type">
             Tipe
           </label>
-          <input id="type" name="type" defaultValue={defaults.type} required className={inputClass} />
+          <input
+            id="type"
+            name="type"
+            defaultValue={values?.type ?? defaults.type}
+            required
+            className={inputClass}
+          />
         </div>
         <div>
           <label className="block text-body-sm text-text-2" htmlFor="role">
             Role
           </label>
-          <input id="role" name="role" defaultValue={defaults.role} required className={inputClass} />
+          <input
+            id="role"
+            name="role"
+            defaultValue={values?.role ?? defaults.role}
+            required
+            className={inputClass}
+          />
         </div>
         <div>
           <label className="block text-body-sm text-text-2" htmlFor="year">
             Tahun
           </label>
-          <input id="year" name="year" defaultValue={defaults.year} required className={inputClass} />
+          <input
+            id="year"
+            name="year"
+            defaultValue={values?.year ?? defaults.year}
+            required
+            className={inputClass}
+          />
         </div>
       </div>
 
@@ -98,7 +133,7 @@ export function ProjectForm(props: Props) {
         <textarea
           id="description"
           name="description"
-          defaultValue={defaults.description}
+          defaultValue={values?.description ?? defaults.description}
           required
           rows={3}
           className={inputClass}
@@ -112,7 +147,7 @@ export function ProjectForm(props: Props) {
         <textarea
           id="highlights"
           name="highlights"
-          defaultValue={defaults.highlights}
+          defaultValue={values?.highlights ?? defaults.highlights}
           required
           rows={4}
           className={inputClass}
@@ -123,14 +158,27 @@ export function ProjectForm(props: Props) {
         <label className="block text-body-sm text-text-2" htmlFor="tags">
           Tags (pisahkan dengan koma)
         </label>
-        <input id="tags" name="tags" defaultValue={defaults.tags} required className={inputClass} />
+        <input
+          id="tags"
+          name="tags"
+          defaultValue={values?.tags ?? defaults.tags}
+          required
+          className={inputClass}
+        />
       </div>
 
       <div>
         <label className="block text-body-sm text-text-2" htmlFor="href">
           Link project (repo/demo)
         </label>
-        <input id="href" name="href" type="url" defaultValue={defaults.href} required className={inputClass} />
+        <input
+          id="href"
+          name="href"
+          type="url"
+          defaultValue={values?.href ?? defaults.href}
+          required
+          className={inputClass}
+        />
       </div>
 
       <div>
@@ -156,7 +204,7 @@ export function ProjectForm(props: Props) {
           id="published"
           name="published"
           type="checkbox"
-          defaultChecked={defaults.published}
+          defaultChecked={values ? values.published === "on" : defaults.published}
           className="h-4 w-4 rounded border-border"
         />
         <label className="text-body-sm text-text-2" htmlFor="published">
@@ -170,7 +218,7 @@ export function ProjectForm(props: Props) {
             id="hasCaseStudy"
             name="hasCaseStudy"
             type="checkbox"
-            defaultChecked={defaults.hasCaseStudy}
+            defaultChecked={values ? values.hasCaseStudy === "on" : defaults.hasCaseStudy}
             className="h-4 w-4 rounded border-border"
           />
           <label className="text-body-sm font-medium text-ink" htmlFor="hasCaseStudy">
@@ -186,7 +234,7 @@ export function ProjectForm(props: Props) {
             <textarea
               id="challenge"
               name="challenge"
-              defaultValue={defaults.challenge}
+              defaultValue={values?.challenge ?? defaults.challenge}
               rows={3}
               className={inputClass}
             />
@@ -198,7 +246,7 @@ export function ProjectForm(props: Props) {
             <textarea
               id="solution"
               name="solution"
-              defaultValue={defaults.solution}
+              defaultValue={values?.solution ?? defaults.solution}
               rows={3}
               className={inputClass}
             />
@@ -207,7 +255,13 @@ export function ProjectForm(props: Props) {
             <label className="block text-body-sm text-text-2" htmlFor="result">
               Result
             </label>
-            <textarea id="result" name="result" defaultValue={defaults.result} rows={3} className={inputClass} />
+            <textarea
+              id="result"
+              name="result"
+              defaultValue={values?.result ?? defaults.result}
+              rows={3}
+              className={inputClass}
+            />
           </div>
 
           <div>

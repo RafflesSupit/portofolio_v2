@@ -4,20 +4,27 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { extractFormValues } from "@/lib/form-values";
 
 const faqSchema = z.object({
   question: z.string().min(1),
   answer: z.string().min(1),
 });
 
-export type FaqFormState = { error?: string };
+export type FaqFormState = {
+  error?: string;
+  values?: Record<string, string>;
+  submittedAt?: number;
+};
 
 export async function createFaqItem(
   _prevState: FaqFormState,
   formData: FormData,
 ): Promise<FaqFormState> {
   const parsed = faqSchema.safeParse(Object.fromEntries(formData.entries()));
-  if (!parsed.success) return { error: "Data tidak valid." };
+  if (!parsed.success) {
+    return { error: "Data tidak valid.", values: extractFormValues(formData), submittedAt: Date.now() };
+  }
 
   const max = await prisma.faqItem.aggregate({ _max: { order: true } });
   await prisma.faqItem.create({
@@ -35,7 +42,9 @@ export async function updateFaqItem(
   formData: FormData,
 ): Promise<FaqFormState> {
   const parsed = faqSchema.safeParse(Object.fromEntries(formData.entries()));
-  if (!parsed.success) return { error: "Data tidak valid." };
+  if (!parsed.success) {
+    return { error: "Data tidak valid.", values: extractFormValues(formData), submittedAt: Date.now() };
+  }
 
   await prisma.faqItem.update({
     where: { id },
