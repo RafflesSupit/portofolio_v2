@@ -7,6 +7,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { uploadToR2 } from "@/lib/r2";
 import { extractFormValues } from "@/lib/form-values";
+import { notifySubscribersOfNewPost } from "@/lib/newsletter-broadcast";
 
 const postSchema = z.object({
   slug: z
@@ -84,6 +85,14 @@ export async function createPost(
     throw error;
   }
 
+  if (published) {
+    await notifySubscribersOfNewPost({
+      slug: parsed.data.slug,
+      title: parsed.data.title,
+      excerpt: parsed.data.excerpt,
+    });
+  }
+
   revalidatePath("/");
   revalidatePath("/blog");
   revalidatePath("/admin/blog");
@@ -136,6 +145,16 @@ export async function updatePost(
       };
     }
     throw error;
+  }
+
+  // Only broadcast on the transition into "published" — re-saving an
+  // already-published post (typo fix, etc.) shouldn't re-notify everyone.
+  if (published && !existing.published) {
+    await notifySubscribersOfNewPost({
+      slug: parsed.data.slug,
+      title: parsed.data.title,
+      excerpt: parsed.data.excerpt,
+    });
   }
 
   revalidatePath("/");

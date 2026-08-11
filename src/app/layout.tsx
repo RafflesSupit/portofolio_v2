@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import { Cursor } from "@/components/ui/cursor";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 // Serif display face — free stand-in for PP Migra (the reference's paid
@@ -24,10 +25,8 @@ const jetbrainsMono = JetBrains_Mono({
   weight: ["400", "500", "600"],
 });
 
-const siteUrl = "https://rafflessupit.dev";
-
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(SITE_URL),
   title: "Raffles Supit - Backend Engineer",
   description:
     "Backend Engineer focused on scalable, secure microservices - RESTful APIs, distributed systems, and cloud-ready architecture with Laravel, Spring Boot, and Python.",
@@ -45,7 +44,7 @@ export const metadata: Metadata = {
     title: "Raffles Supit - Backend Engineer",
     description:
       "Backend Engineer focused on scalable, secure microservices - RESTful APIs, distributed systems, and cloud-ready architecture.",
-    url: siteUrl,
+    url: SITE_URL,
     siteName: "Raffles Supit",
     type: "website",
   },
