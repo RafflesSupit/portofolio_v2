@@ -1,4 +1,5 @@
 import { Nav } from "@/components/nav";
+import { HashScrollFix } from "@/components/hash-scroll-fix";
 import { Hero } from "@/components/hero";
 import { Intro } from "@/components/intro";
 import { Journey } from "@/components/journey";
@@ -38,6 +39,7 @@ export default async function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
       />
       <Nav profile={profile} projectCount={projects.length} />
+      <HashScrollFix />
       <main id="main-content" className="flex-1">
         <Hero profile={profile} />
         <Intro profile={profile} />
