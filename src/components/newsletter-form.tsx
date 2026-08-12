@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { subscribeToNewsletter, type NewsletterFormState } from "@/lib/newsletter-actions";
 import { Button } from "@/components/ui/button";
+import { CheckIcon } from "@/components/ui/check-icon";
 import { cn } from "@/lib/cn";
 
 const initialState: NewsletterFormState = {};
@@ -19,9 +20,18 @@ export function NewsletterForm({ className }: { className?: string }) {
 
   if (state?.success) {
     return (
-      <p className={cn("text-body-sm text-text-2", className)} role="status">
-        Terima kasih — kamu sudah terdaftar.
-      </p>
+      <div
+        className={cn(
+          "flex items-center gap-3 rounded-md border border-border bg-surface-2 px-4 py-3.5",
+          className,
+        )}
+        role="status"
+      >
+        <CheckIcon className="shrink-0 text-accent-ink" />
+        <p className="text-body-sm text-text-2">
+          Terdaftar — notifikasi post baru bakal masuk ke inbox kamu.
+        </p>
+      </div>
     );
   }
 

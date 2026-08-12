@@ -4,6 +4,7 @@ import { Footer } from "@/components/footer";
 import { SpecLabel } from "@/components/ui/spec-label";
 import { RegistrationMark } from "@/components/ui/registration-mark";
 import { BlogExplorer } from "@/components/blog-explorer";
+import { EmptyState } from "@/components/ui/empty-state";
 import { getProfile, getPublishedPosts, getProjectCount } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +31,11 @@ export default async function BlogIndexPage() {
           <h1 className="text-display-l mt-4 max-w-[20ch] text-ink">Notes on building backend systems.</h1>
 
           {posts.length === 0 ? (
-            <p className="mt-10 text-body text-text-2">No posts yet — check back soon.</p>
+            <EmptyState
+              className="mt-12"
+              label="No entries"
+              message="Nothing shipped yet — the first note's in the pipeline."
+            />
           ) : (
             <div className="mt-12">
               <BlogExplorer posts={posts} />

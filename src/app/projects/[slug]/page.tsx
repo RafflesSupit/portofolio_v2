@@ -90,7 +90,7 @@ export default async function ProjectCaseStudyPage({
               </Reveal>
             </aside>
 
-            <div className="space-y-20 md:space-y-28">
+            <div className="space-y-20 md:space-y-20">
               {story.map((section) => (
                 <Reveal key={section.label}>
                   <SpecLabel index={section.index}>{section.label}</SpecLabel>
@@ -118,13 +118,12 @@ export default async function ProjectCaseStudyPage({
         </div>
 
         {project.gallery.length > 0 ? (
-          <section className="border-t border-border px-6 py-20 md:px-8 md:py-28">
-            <div className="mx-auto max-w-[1400px]">
-              <SpecLabel index={story.length + (project.highlights.length > 0 ? 2 : 1)} className="mb-6">
-                Gallery
-              </SpecLabel>
-              <ProjectGallery images={project.gallery} alt={project.title} />
-            </div>
+          <section className="border-t border-border">
+            <ProjectGallery
+              images={project.gallery}
+              alt={project.title}
+              index={story.length + (project.highlights.length > 0 ? 2 : 1)}
+            />
           </section>
         ) : null}
       </main>

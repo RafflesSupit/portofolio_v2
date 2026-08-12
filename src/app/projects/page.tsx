@@ -4,6 +4,7 @@ import { Footer } from "@/components/footer";
 import { SpecLabel } from "@/components/ui/spec-label";
 import { RegistrationMark } from "@/components/ui/registration-mark";
 import { ProjectsExplorer } from "@/components/projects-explorer";
+import { EmptyState } from "@/components/ui/empty-state";
 import { getProfile, getProjects } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -28,9 +29,11 @@ export default async function ProjectsIndexPage() {
           </h1>
 
           {projects.length === 0 ? (
-            <p className="mt-10 text-body text-text-2">
-              No published projects yet — check back soon.
-            </p>
+            <EmptyState
+              className="mt-12"
+              label="No entries"
+              message="Nothing shipped yet — the first build's in the pipeline."
+            />
           ) : (
             <div className="mt-12">
               <ProjectsExplorer projects={projects} />

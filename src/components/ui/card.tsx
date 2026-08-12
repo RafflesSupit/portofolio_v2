@@ -55,7 +55,8 @@ export function CardMedia({
   src?: string;
   alt?: string;
   monogram?: string;
-  aspect?: "video" | "square" | "portrait";
+  /** "auto" applies no aspect-ratio class — the caller controls height directly (e.g. to stretch full-height in a row layout). */
+  aspect?: "video" | "square" | "portrait" | "auto";
   className?: string;
   sizes?: string;
   /** Image renders desaturated at rest, full color on card hover — the khasiyev.com-style gallery treatment. */
@@ -67,10 +68,13 @@ export function CardMedia({
   const [errored, setErrored] = useState(false);
   const showFallback = !src || errored;
 
-  const aspectClass = { video: "aspect-video", square: "aspect-square", portrait: "aspect-[3/4]" }[aspect];
+  const aspectClass =
+    aspect === "auto"
+      ? undefined
+      : { video: "aspect-video", square: "aspect-square", portrait: "aspect-[3/4]" }[aspect];
 
   return (
-    <div className={cn("relative overflow-hidden border-b border-border", aspectClass, className)}>
+    <div className={cn("relative overflow-hidden", aspectClass, className)}>
       {showFallback ? (
         <div
           className="absolute inset-0 flex items-center justify-center transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04]"

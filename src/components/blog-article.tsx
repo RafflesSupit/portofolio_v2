@@ -96,12 +96,19 @@ export function BlogArticle({
                 </Reveal>
               ) : null}
 
-              <Reveal
-                delay={0.25}
-                className="mt-10 text-body-lg leading-[1.75] text-text-2 [&>p:first-of-type]:mt-0 [&>p:first-of-type]:text-h4 [&>p:first-of-type]:font-normal [&>p:first-of-type]:text-ink [&_a]:text-accent-ink [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-border-strong [&_blockquote]:pl-4 [&_blockquote]:italic [&_code]:rounded [&_code]:bg-surface-2 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-body-sm [&_h1]:text-h2 [&_h1]:mt-10 [&_h1]:text-ink [&_h2]:text-h3 [&_h2]:mt-8 [&_h2]:text-ink [&_h3]:text-h4 [&_h3]:mt-6 [&_h3]:text-ink [&_li]:mt-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mt-5 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-surface-2 [&_pre]:p-4 [&_ul]:list-disc [&_ul]:pl-6"
-              >
+              {/*
+                Deliberately not wrapped in <Reveal> — that component only
+                fades an element in once 20% of *its own height* has
+                scrolled into view, which works fine for compact blocks but
+                is nearly unusable for a long article body: 20% of a
+                multi-thousand-pixel-tall element can be a huge scroll
+                distance, so the text could sit at opacity:0 for most of
+                the read, reading as "the content never showed up". Body
+                copy you're there to read should just be visible.
+              */}
+              <div className="mt-10 text-body-lg leading-[1.75] text-text-2 [&>p:first-of-type]:mt-0 [&>p:first-of-type]:text-h4 [&>p:first-of-type]:font-normal [&>p:first-of-type]:text-ink [&_a]:text-accent-ink [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-border-strong [&_blockquote]:pl-4 [&_blockquote]:italic [&_code]:rounded [&_code]:bg-surface-2 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-body-sm [&_h1]:text-h2 [&_h1]:mt-10 [&_h1]:text-ink [&_h2]:text-h3 [&_h2]:mt-8 [&_h2]:text-ink [&_h3]:text-h4 [&_h3]:mt-6 [&_h3]:text-ink [&_li]:mt-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mt-5 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-surface-2 [&_pre]:p-4 [&_ul]:list-disc [&_ul]:pl-6">
                 <ReactMarkdown>{post.content}</ReactMarkdown>
-              </Reveal>
+              </div>
             </div>
 
             <aside className="space-y-10 md:sticky md:top-32 md:h-fit">

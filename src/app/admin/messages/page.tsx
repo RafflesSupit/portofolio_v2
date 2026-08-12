@@ -1,11 +1,19 @@
 import { prisma } from "@/lib/prisma";
+import { describeError } from "@/lib/db-retry";
 import { markMessageRead, deleteMessage } from "./actions";
 import { DeleteButton } from "@/components/admin/delete-button";
 
 export default async function AdminMessagesPage() {
-  const messages = await prisma.contactMessage.findMany({
-    orderBy: [{ read: "asc" }, { createdAt: "desc" }],
-  });
+  // Contact messages aren't mirrored to the standby (see admin/layout.tsx),
+  // so there's nowhere to fall back to — just don't take the page down.
+  let messages: Awaited<ReturnType<typeof prisma.contactMessage.findMany>> = [];
+  try {
+    messages = await prisma.contactMessage.findMany({
+      orderBy: [{ read: "asc" }, { createdAt: "desc" }],
+    });
+  } catch (error) {
+    console.warn(`[db] failed to load contact messages — ${describeError(error)}`);
+  }
 
   return (
     <div>

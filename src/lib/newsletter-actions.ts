@@ -38,6 +38,11 @@ export async function subscribeToNewsletter(
   if (!parsed.success) {
     return { error: "Isi nama depan, nama belakang, dan email dengan benar." };
   }
+  const subscribers = await prisma.newsletterSubscriber.findFirst({ where: {"email": parsed.data.email }});
+  if (subscribers) {
+    return { error: "Email ini sudah terdaftar." };
+  }
+  
 
   try {
     await prisma.newsletterSubscriber.create({ data: parsed.data });

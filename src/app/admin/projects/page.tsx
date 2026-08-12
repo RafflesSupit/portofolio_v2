@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { prismaReplica } from "@/lib/prisma-replica";
+import { withFallback } from "@/lib/db-retry";
 import { ProjectsList } from "./projects-list";
 
 export default async function AdminProjectsPage() {
-  const projects = await prisma.project.findMany({ orderBy: { order: "asc" } });
+  const projects = await withFallback(
+    () => prisma.project.findMany({ orderBy: { order: "asc" } }),
+    () => prismaReplica!.project.findMany({ orderBy: { order: "asc" } }),
+    [],
+  );
 
   return (
     <div>

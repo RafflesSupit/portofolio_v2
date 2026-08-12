@@ -7,6 +7,12 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { uploadToR2 } from "@/lib/r2";
 import { extractFormValues } from "@/lib/form-values";
+import { isConnectionError, SAVE_UNAVAILABLE_MESSAGE } from "@/lib/db-retry";
+import {
+  syncProject,
+  deleteProject as deleteProjectFromReplica,
+  syncProjectOrder,
+} from "@/lib/sync-replica";
 
 const projectSchema = z.object({
   slug: z
@@ -89,10 +95,10 @@ export async function createProject(
     };
   }
 
-  const max = await prisma.project.aggregate({ _max: { order: true } });
-
+  let project;
   try {
-    await prisma.project.create({
+    const max = await prisma.project.aggregate({ _max: { order: true } });
+    project = await prisma.project.create({
       data: {
         slug: parsed.data.slug,
         title: parsed.data.title,
@@ -121,8 +127,13 @@ export async function createProject(
         submittedAt: Date.now(),
       };
     }
+    if (isConnectionError(error)) {
+      return { error: SAVE_UNAVAILABLE_MESSAGE, values: extractFormValues(formData), submittedAt: Date.now() };
+    }
     throw error;
   }
+
+  await syncProject(project);
 
   revalidatePath("/");
   revalidatePath("/admin/projects");
@@ -143,7 +154,15 @@ export async function updateProject(
     };
   }
 
-  const existing = await prisma.project.findUnique({ where: { id } });
+  let existing;
+  try {
+    existing = await prisma.project.findUnique({ where: { id } });
+  } catch (error) {
+    if (isConnectionError(error)) {
+      return { error: SAVE_UNAVAILABLE_MESSAGE, values: extractFormValues(formData), submittedAt: Date.now() };
+    }
+    throw error;
+  }
   if (!existing) {
     return { error: "Project tidak ditemukan.", values: extractFormValues(formData), submittedAt: Date.now() };
   }
@@ -161,8 +180,9 @@ export async function updateProject(
     };
   }
 
+  let project;
   try {
-    await prisma.project.update({
+    project = await prisma.project.update({
       where: { id },
       data: {
         slug: parsed.data.slug,
@@ -191,8 +211,13 @@ export async function updateProject(
         submittedAt: Date.now(),
       };
     }
+    if (isConnectionError(error)) {
+      return { error: SAVE_UNAVAILABLE_MESSAGE, values: extractFormValues(formData), submittedAt: Date.now() };
+    }
     throw error;
   }
+
+  await syncProject(project);
 
   revalidatePath("/");
   revalidatePath("/admin/projects");
@@ -202,6 +227,7 @@ export async function updateProject(
 export async function deleteProject(formData: FormData) {
   const id = String(formData.get("id"));
   await prisma.project.delete({ where: { id } });
+  await deleteProjectFromReplica(id);
   revalidatePath("/");
   revalidatePath("/admin/projects");
 }
@@ -210,6 +236,7 @@ export async function reorderProjects(orderedIds: string[]) {
   await prisma.$transaction(
     orderedIds.map((id, index) => prisma.project.update({ where: { id }, data: { order: index } })),
   );
+  await syncProjectOrder(orderedIds);
   revalidatePath("/");
   revalidatePath("/admin/projects");
 }

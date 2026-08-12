@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { prismaReplica } from "@/lib/prisma-replica";
+import { withFallback } from "@/lib/db-retry";
 import { ExperienceForm } from "../../experience-form";
 
 export default async function EditExperiencePage({
@@ -8,7 +10,11 @@ export default async function EditExperiencePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const item = await prisma.experienceItem.findUnique({ where: { id } });
+  const item = await withFallback(
+    () => prisma.experienceItem.findUnique({ where: { id } }),
+    () => prismaReplica!.experienceItem.findUnique({ where: { id } }),
+    null,
+  );
   if (!item) notFound();
 
   return (

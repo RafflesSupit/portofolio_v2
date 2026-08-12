@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { prismaReplica } from "@/lib/prisma-replica";
+import { withFallback } from "@/lib/db-retry";
 import { PostForm } from "../../post-form";
 
 export default async function EditPostPage({
@@ -8,7 +10,11 @@ export default async function EditPostPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const post = await prisma.post.findUnique({ where: { id } });
+  const post = await withFallback(
+    () => prisma.post.findUnique({ where: { id } }),
+    () => prismaReplica!.post.findUnique({ where: { id } }),
+    null,
+  );
   if (!post) notFound();
 
   return (

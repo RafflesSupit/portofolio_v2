@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { ProjectData } from "@/lib/queries";
 import { Reveal } from "@/components/ui/reveal";
 import { Card, CardBody, CardMedia } from "@/components/ui/card";
+import { ArrowUpRightIcon } from "@/components/ui/arrow-icon";
 import { toThumbnailUrl } from "@/lib/image-url";
 
 export function ProjectList({
@@ -15,7 +16,7 @@ export function ProjectList({
   numbered?: boolean;
 }) {
   return (
-    <div className="grid gap-6 md:grid-cols-2">
+    <div className="flex flex-col gap-6">
       {projects.map((project, i) => (
         <Reveal key={project.slug} delay={i * 0.05}>
           <ProjectCard project={project} number={numbered ? i + 1 : undefined} />
@@ -49,6 +50,8 @@ function ProjectMedia({
       src={src}
       alt=""
       monogram={monogram}
+      aspect="auto"
+      className="h-2/3 shrink-0 border-b border-border md:h-full md:w-[44%] md:border-b-0 md:border-r"
       grayscaleHover
       onError={() => setThumbFailed(true)}
     >
@@ -86,48 +89,35 @@ function ProjectCard({ project, number }: { project: ProjectData; number?: numbe
     : { href: project.href, target: "_blank" as const, rel: "noreferrer" };
 
   return (
-    <Card {...linkProps} data-cursor-hover data-cursor-label="View">
+    <Card
+      {...linkProps}
+      data-cursor-hover
+      data-cursor-label="View"
+      className="relative flex h-[90vh] flex-col md:flex-row md:items-stretch"
+    >
       <ProjectMedia project={project} monogram={monogram} number={number} />
 
-      <CardBody>
-        <p className="text-meta text-text-3">
-          {project.type}
-          <span className="mx-1.5" aria-hidden="true">
-            ·
-          </span>
-          {project.role}
-          <span className="mx-1.5" aria-hidden="true">
-            ·
-          </span>
-          {project.year}
-        </p>
+      <CardBody className="flex h-full flex-col justify-between p-6 md:w-[56%] md:p-12">
+        <div className="flex items-baseline gap-3">
+          <span className="text-body-sm font-semibold text-ink">{project.year}</span>
+          <span className="text-body-sm text-text-3">{project.type}</span>
+        </div>
 
-        <h3 className="mt-2 line-clamp-2 text-h3 text-ink transition-colors duration-150 group-hover:text-accent-ink">
+        <h3 className="text-h1 text-ink transition-colors duration-150 group-hover:text-accent-ink">
           {project.title}
         </h3>
 
-        <p className="mt-3 line-clamp-3 text-body-sm text-text-2">{project.description}</p>
-
-        <ul className="mt-5 space-y-2">
-          {project.highlights.map((h, i) => (
-            <li key={i} className="flex gap-2.5 text-body-sm text-text-2">
-              <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-accent" aria-hidden="true" />
-              <span>{h}</span>
-            </li>
-          ))}
-        </ul>
-
-        <ul className="mt-6 flex flex-wrap gap-2">
-          {project.tags.map((tag) => (
-            <li
-              key={tag}
-              className="text-caption rounded-full border border-border bg-surface-2 px-2.5 py-1 text-text-2"
-            >
-              {tag}
-            </li>
-          ))}
-        </ul>
+        <p className="line-clamp-3 max-w-[45ch] text-body-sm font-medium text-text-2">
+          {project.description}
+        </p>
       </CardBody>
+
+      <span
+        aria-hidden="true"
+        className="absolute right-5 top-5 text-ink transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-1 group-hover:-translate-y-1 md:right-8 md:top-8"
+      >
+        <ArrowUpRightIcon className="h-8 w-8 md:h-10 md:w-10" />
+      </span>
     </Card>
   );
 }

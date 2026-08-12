@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Reveal } from "@/components/ui/reveal";
 import { FilterChip } from "@/components/ui/filter-chip";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { PostSummary } from "@/lib/queries";
 
 /**
@@ -40,7 +41,7 @@ export function BlogExplorer({ posts }: { posts: PostSummary[] }) {
       ) : null}
 
       {filtered.length === 0 ? (
-        <p className="py-16 text-center text-body text-text-2">No posts match this filter.</p>
+        <EmptyState className="mt-10" label="0 results" message="No notes tagged this way yet — try All." />
       ) : (
         <div className="mt-10 grid gap-x-8 gap-y-16 sm:grid-cols-2">
           {filtered.map((post, i) => (

@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { prismaReplica } from "@/lib/prisma-replica";
+import { withFallback } from "@/lib/db-retry";
 import { SkillForm } from "../../skill-form";
 
 export default async function EditSkillCategoryPage({
@@ -8,7 +10,11 @@ export default async function EditSkillCategoryPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const category = await prisma.skillCategory.findUnique({ where: { id } });
+  const category = await withFallback(
+    () => prisma.skillCategory.findUnique({ where: { id } }),
+    () => prismaReplica!.skillCategory.findUnique({ where: { id } }),
+    null,
+  );
   if (!category) notFound();
 
   return (

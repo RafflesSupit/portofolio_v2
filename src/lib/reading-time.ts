@@ -1,4 +1,4 @@
-const WORDS_PER_MINUTE = 200;
+const WORDS_PER_MINUTE = 150;
 
 /** Simple word-count estimate — same approach most reading-time widgets use. */
 export function estimateReadingTime(content: string): number {

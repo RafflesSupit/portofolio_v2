@@ -13,16 +13,16 @@ type Principle = {
  */
 const PRINCIPLES: Principle[] = [
   {
-    title: "Add your first principle",
-    description: "Replace this with how you approach this part of your work.",
+    title: "Clean & Scalable Code",
+    description: "Writing modular, readable, and well-structured code designed to scale effortlessly and simplify long-term maintenance.",
   },
   {
-    title: "Add your second principle",
-    description: "Replace this with how you approach this part of your work.",
+    title: "Performance & Efficiency First",
+    description: "Optimizing database queries, caching strategies, and system latency to deliver lightning-fast response times.",
   },
   {
-    title: "Add your third principle",
-    description: "Replace this with how you approach this part of your work.",
+    title: "Security & System Reliability",
+    description: "Implementing robust authentication, proper authorization, and fail-safe error handling across every service layer.",
   },
 ];
 

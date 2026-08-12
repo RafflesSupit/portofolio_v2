@@ -1,9 +1,17 @@
 import { prisma } from "@/lib/prisma";
+import { describeError } from "@/lib/db-retry";
 import { deleteSubscriber } from "./actions";
 import { DeleteButton } from "@/components/admin/delete-button";
 
 export default async function AdminNewsletterPage() {
-  const subscribers = await prisma.newsletterSubscriber.findMany({ orderBy: { createdAt: "desc" } });
+  // Subscribers aren't mirrored to the standby (see admin/layout.tsx),
+  // so there's nowhere to fall back to — just don't take the page down.
+  let subscribers: Awaited<ReturnType<typeof prisma.newsletterSubscriber.findMany>> = [];
+  try {
+    subscribers = await prisma.newsletterSubscriber.findMany({ orderBy: { createdAt: "desc" } });
+  } catch (error) {
+    console.warn(`[db] failed to load newsletter subscribers — ${describeError(error)}`);
+  }
 
   return (
     <div>

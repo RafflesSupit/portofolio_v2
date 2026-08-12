@@ -18,10 +18,10 @@ type Beat = {
  * them short (roughly one line) rather than full paragraphs.
  */
 const BEATS: Beat[] = [
-  { text: "Replace this line with the first beat of your story.", size: "lg" },
-  { text: "The moment something clicked.", size: "xl" },
-  { text: "What you built, broke, and learned along the way.", size: "lg" },
-  { text: "And here's where it's going next.", size: "xl" },
+  { text: "It started with a simple curiosity about how data moves behind the scenes. Writing my first lines of backend code turned static screens into living, interactive applications.", size: "lg" },
+  { text: "The moment I stepped into microservices and distributed systems. Realizing how decoupled services can seamlessly communicate—when architected with intention—completely shifted how I approach software design.", size: "xl" },
+  { text: "I've built e-restaurant platforms and seven service microservice architectures—and broken a few databases along the way. I learned that resilience matters more than clever code, async processing beats blocking calls, and clean architecture saves team sanity.", size: "lg" },
+  { text: "Focusing on high-throughput distributed systems, cloud-native scalability, and engineering reliable backend infrastructure that handles complex business logic with speed and precision.", size: "xl" },
 ];
 
 export function Journey() {

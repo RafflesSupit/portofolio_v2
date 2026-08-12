@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { prismaReplica } from "@/lib/prisma-replica";
+import { withFallback } from "@/lib/db-retry";
 import { SkillsList } from "./skills-list";
 
 export default async function AdminSkillsPage() {
-  const categories = await prisma.skillCategory.findMany({ orderBy: { order: "asc" } });
+  const categories = await withFallback(
+    () => prisma.skillCategory.findMany({ orderBy: { order: "asc" } }),
+    () => prismaReplica!.skillCategory.findMany({ orderBy: { order: "asc" } }),
+    [],
+  );
 
   return (
     <div>

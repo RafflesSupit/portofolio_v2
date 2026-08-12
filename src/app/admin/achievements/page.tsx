@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { prismaReplica } from "@/lib/prisma-replica";
+import { withFallback } from "@/lib/db-retry";
 import { AchievementsList } from "./achievements-list";
 
 export default async function AdminAchievementsPage() {
-  const items = await prisma.achievement.findMany({ orderBy: { order: "asc" } });
+  const items = await withFallback(
+    () => prisma.achievement.findMany({ orderBy: { order: "asc" } }),
+    () => prismaReplica!.achievement.findMany({ orderBy: { order: "asc" } }),
+    [],
+  );
 
   return (
     <div>

@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { prismaReplica } from "@/lib/prisma-replica";
+import { withFallback } from "@/lib/db-retry";
 import { ProjectForm } from "../../project-form";
 
 export default async function EditProjectPage({
@@ -8,7 +10,11 @@ export default async function EditProjectPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const project = await prisma.project.findUnique({ where: { id } });
+  const project = await withFallback(
+    () => prisma.project.findUnique({ where: { id } }),
+    () => prismaReplica!.project.findUnique({ where: { id } }),
+    null,
+  );
   if (!project) notFound();
 
   return (

@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { uploadToR2 } from "@/lib/r2";
+import { isConnectionError, SAVE_UNAVAILABLE_MESSAGE } from "@/lib/db-retry";
+import { syncProfile } from "@/lib/sync-replica";
 
 const profileSchema = z.object({
   name: z.string().min(1),
@@ -53,14 +55,22 @@ export async function updateProfile(
     showreelUrl = await uploadToR2(showreelFile, "showreel");
   }
 
-  const existing = await prisma.profile.findFirst();
   const data = { ...parsed.data, bio, resumeUrl, showreelUrl };
 
-  if (existing) {
-    await prisma.profile.update({ where: { id: existing.id }, data });
-  } else {
-    await prisma.profile.create({ data });
+  let profile;
+  try {
+    const existing = await prisma.profile.findFirst();
+    profile = existing
+      ? await prisma.profile.update({ where: { id: existing.id }, data })
+      : await prisma.profile.create({ data });
+  } catch (error) {
+    if (isConnectionError(error)) {
+      return { error: SAVE_UNAVAILABLE_MESSAGE };
+    }
+    throw error;
   }
+
+  await syncProfile(profile);
 
   revalidatePath("/");
   revalidatePath("/admin/profile");

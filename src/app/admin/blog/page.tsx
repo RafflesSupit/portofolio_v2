@@ -1,10 +1,16 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { prismaReplica } from "@/lib/prisma-replica";
+import { withFallback } from "@/lib/db-retry";
 import { deletePost } from "./actions";
 import { DeleteButton } from "@/components/admin/delete-button";
 
 export default async function AdminBlogPage() {
-  const posts = await prisma.post.findMany({ orderBy: { createdAt: "desc" } });
+  const posts = await withFallback(
+    () => prisma.post.findMany({ orderBy: { createdAt: "desc" } }),
+    () => prismaReplica!.post.findMany({ orderBy: { createdAt: "desc" } }),
+    [],
+  );
 
   return (
     <div>

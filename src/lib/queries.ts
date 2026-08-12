@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { prismaReplica } from "@/lib/prisma-replica";
+import { withFallback } from "@/lib/db-retry";
 
 export type ProfileData = {
   name: string;
@@ -106,11 +108,20 @@ const DEFAULT_PROFILE = {
 };
 
 async function ensureProfile() {
-  const existing = await prisma.profile.findFirst();
-  if (existing) return existing;
-  // Profile is a required singleton; auto-heal instead of crashing the page
-  // if the table is ever empty (fresh DB, accidental reset, etc).
-  return prisma.profile.create({ data: DEFAULT_PROFILE });
+  return withFallback(
+    async () => {
+      const existing = await prisma.profile.findFirst();
+      if (existing) return existing;
+      // Profile is a required singleton; auto-heal instead of crashing the page
+      // if the table is ever empty (fresh DB, accidental reset, etc).
+      return prisma.profile.create({ data: DEFAULT_PROFILE });
+    },
+    async () => {
+      const existing = await prismaReplica!.profile.findFirst();
+      if (!existing) throw new Error("No profile available on standby.");
+      return existing;
+    },
+  );
 }
 
 export async function getProfile(): Promise<ProfileData> {
@@ -142,15 +153,20 @@ export async function getProfile(): Promise<ProfileData> {
 }
 
 export async function getSkills(): Promise<SkillGroup[]> {
-  const rows = await prisma.skillCategory.findMany({ orderBy: { order: "asc" } });
+  const rows = await withFallback(
+    () => prisma.skillCategory.findMany({ orderBy: { order: "asc" } }),
+    () => prismaReplica!.skillCategory.findMany({ orderBy: { order: "asc" } }),
+    [],
+  );
   return rows.map((row) => ({ category: row.category, items: row.items }));
 }
 
 export async function getProjects(): Promise<ProjectData[]> {
-  const rows = await prisma.project.findMany({
-    where: { published: true },
-    orderBy: { order: "asc" },
-  });
+  const rows = await withFallback(
+    () => prisma.project.findMany({ where: { published: true }, orderBy: { order: "asc" } }),
+    () => prismaReplica!.project.findMany({ where: { published: true }, orderBy: { order: "asc" } }),
+    [],
+  );
   return rows.map((row) => ({
     slug: row.slug,
     title: row.title,
@@ -167,11 +183,19 @@ export async function getProjects(): Promise<ProjectData[]> {
 }
 
 export async function getProjectCount(): Promise<number> {
-  return prisma.project.count({ where: { published: true } });
+  return withFallback(
+    () => prisma.project.count({ where: { published: true } }),
+    () => prismaReplica!.project.count({ where: { published: true } }),
+    0,
+  );
 }
 
 export async function getProjectBySlug(slug: string): Promise<ProjectCaseStudy | null> {
-  const row = await prisma.project.findUnique({ where: { slug } });
+  const row = await withFallback(
+    () => prisma.project.findUnique({ where: { slug } }),
+    () => prismaReplica!.project.findUnique({ where: { slug } }),
+    null,
+  );
   if (!row || !row.published) return null;
 
   return {
@@ -194,7 +218,11 @@ export async function getProjectBySlug(slug: string): Promise<ProjectCaseStudy |
 }
 
 export async function getExperienceItems(): Promise<ExperienceData[]> {
-  const rows = await prisma.experienceItem.findMany({ orderBy: { order: "asc" } });
+  const rows = await withFallback(
+    () => prisma.experienceItem.findMany({ orderBy: { order: "asc" } }),
+    () => prismaReplica!.experienceItem.findMany({ orderBy: { order: "asc" } }),
+    [],
+  );
   return rows.map((row) => ({
     role: row.role,
     org: row.org,
@@ -204,7 +232,11 @@ export async function getExperienceItems(): Promise<ExperienceData[]> {
 }
 
 export async function getAchievements(): Promise<AchievementData[]> {
-  const rows = await prisma.achievement.findMany({ orderBy: { order: "asc" } });
+  const rows = await withFallback(
+    () => prisma.achievement.findMany({ orderBy: { order: "asc" } }),
+    () => prismaReplica!.achievement.findMany({ orderBy: { order: "asc" } }),
+    [],
+  );
   return rows.map((row) => ({
     id: row.id,
     title: row.title,
@@ -216,7 +248,11 @@ export async function getAchievements(): Promise<AchievementData[]> {
 }
 
 export async function getFaqItems(): Promise<FaqItemData[]> {
-  const rows = await prisma.faqItem.findMany({ orderBy: { order: "asc" } });
+  const rows = await withFallback(
+    () => prisma.faqItem.findMany({ orderBy: { order: "asc" } }),
+    () => prismaReplica!.faqItem.findMany({ orderBy: { order: "asc" } }),
+    [],
+  );
   return rows.map((row) => ({
     id: row.id,
     question: row.question,
@@ -225,11 +261,11 @@ export async function getFaqItems(): Promise<FaqItemData[]> {
 }
 
 export async function getPublishedPosts(limit?: number): Promise<PostSummary[]> {
-  const rows = await prisma.post.findMany({
-    where: { published: true },
-    orderBy: { publishedAt: "desc" },
-    take: limit,
-  });
+  const rows = await withFallback(
+    () => prisma.post.findMany({ where: { published: true }, orderBy: { publishedAt: "desc" }, take: limit }),
+    () => prismaReplica!.post.findMany({ where: { published: true }, orderBy: { publishedAt: "desc" }, take: limit }),
+    [],
+  );
   return rows.map((row) => ({
     slug: row.slug,
     title: row.title,
@@ -241,7 +277,11 @@ export async function getPublishedPosts(limit?: number): Promise<PostSummary[]> 
 }
 
 export async function getPostBySlug(slug: string): Promise<PostDetail | null> {
-  const row = await prisma.post.findUnique({ where: { slug } });
+  const row = await withFallback(
+    () => prisma.post.findUnique({ where: { slug } }),
+    () => prismaReplica!.post.findUnique({ where: { slug } }),
+    null,
+  );
   if (!row || !row.published) return null;
 
   return {

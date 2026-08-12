@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { prismaReplica } from "@/lib/prisma-replica";
+import { withFallback } from "@/lib/db-retry";
 import { FaqList } from "./faq-list";
 
 export default async function AdminFaqPage() {
-  const items = await prisma.faqItem.findMany({ orderBy: { order: "asc" } });
+  const items = await withFallback(
+    () => prisma.faqItem.findMany({ orderBy: { order: "asc" } }),
+    () => prismaReplica!.faqItem.findMany({ orderBy: { order: "asc" } }),
+    [],
+  );
 
   return (
     <div>

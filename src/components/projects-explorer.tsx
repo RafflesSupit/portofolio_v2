@@ -2,29 +2,35 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
+import { AnimatePresence, motion } from "framer-motion";
 import { ProjectList } from "@/components/project-list";
-import { FilterChip } from "@/components/ui/filter-chip";
 import { ArrowIcon } from "@/components/ui/arrow-icon";
+import { EmptyState } from "@/components/ui/empty-state";
 import { toThumbnailUrl } from "@/lib/image-url";
+import { useSafeReducedMotion } from "@/lib/use-safe-reduced-motion";
 import { cn } from "@/lib/cn";
 import type { ProjectData } from "@/lib/queries";
 
 type View = "grid" | "list";
 
 /**
- * Category chips are derived from each project's real `tags` (tech stack,
- * e.g. "Laravel", "Microservices") rather than fixed design-agency
- * categories — this is a backend portfolio, not a design studio, so the
- * filter dimension that actually exists in the data is stack/tag, not
- * "Brand Design" / "UX Design".
+ * Categories are derived from each project's real `tags` (tech stack, e.g.
+ * "Laravel", "Microservices") rather than fixed design-agency categories —
+ * this is a backend portfolio, not a design studio, so the filter
+ * dimension that actually exists in the data is stack/tag, not "Brand
+ * Design" / "UX Design".
  */
 export function ProjectsExplorer({ projects }: { projects: ProjectData[] }) {
-  const categories = useMemo(() => {
-    const set = new Set<string>();
+  const categoryOptions = useMemo(() => {
+    const counts = new Map<string, number>();
     for (const project of projects) {
-      for (const tag of project.tags) set.add(tag);
+      for (const tag of project.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
     }
-    return Array.from(set).sort();
+    const tags = Array.from(counts.keys()).sort();
+    return [
+      { value: "all", label: "All", count: projects.length },
+      ...tags.map((tag) => ({ value: tag, label: tag, count: counts.get(tag) ?? 0 })),
+    ];
   }, [projects]);
 
   const [activeCategory, setActiveCategory] = useState<string>("all");
@@ -36,20 +42,7 @@ export function ProjectsExplorer({ projects }: { projects: ProjectData[] }) {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-6">
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by tag">
-          <FilterChip active={activeCategory === "all"} onClick={() => setActiveCategory("all")}>
-            All
-          </FilterChip>
-          {categories.map((category) => (
-            <FilterChip
-              key={category}
-              active={activeCategory === category}
-              onClick={() => setActiveCategory(category)}
-            >
-              {category}
-            </FilterChip>
-          ))}
-        </div>
+        <CategoryFilter options={categoryOptions} active={activeCategory} onChange={setActiveCategory} />
 
         <div className="flex items-center gap-1 rounded-md border border-border p-1" role="group" aria-label="View">
           <ViewToggleButton active={view === "grid"} onClick={() => setView("grid")} label="Grid view">
@@ -67,7 +60,7 @@ export function ProjectsExplorer({ projects }: { projects: ProjectData[] }) {
 
       <div className="mt-6">
         {filtered.length === 0 ? (
-          <p className="py-16 text-center text-body text-text-2">No projects match this filter.</p>
+          <EmptyState label="0 results" message="No projects tagged this way yet — try All." />
         ) : view === "grid" ? (
           <ProjectList projects={filtered} numbered />
         ) : (
@@ -78,6 +71,101 @@ export function ProjectsExplorer({ projects }: { projects: ProjectData[] }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+type CategoryOption = { value: string; label: string; count: number };
+
+/**
+ * Reference-driven: a trigger button opens a floating panel — vertical
+ * list, active option marked with a dot + bold text, counts in
+ * parens — rather than a row of filter chips.
+ */
+function CategoryFilter({
+  options,
+  active,
+  onChange,
+}: {
+  options: CategoryOption[];
+  active: string;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const shouldReduceMotion = useSafeReducedMotion();
+  const activeOption = options.find((o) => o.value === active);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-haspopup="true"
+        aria-expanded={open}
+        className="tap-target inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 font-mono text-caption uppercase tracking-[0.1em] text-ink transition-colors hover:border-border-strong"
+      >
+        {activeOption?.label ?? "All"}
+        <ChevronIcon className={cn("transition-transform duration-200", open && "rotate-180")} />
+      </button>
+
+      <AnimatePresence>
+        {open ? (
+          <>
+            <motion.div
+              className="fixed inset-0 z-40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: shouldReduceMotion ? 0 : 0.2 }}
+              onClick={() => setOpen(false)}
+            />
+            <motion.div
+              role="menu"
+              aria-label="Filter by category"
+              initial={shouldReduceMotion ? undefined : { opacity: 0, y: -8, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8, scale: 0.97 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="absolute left-0 top-full z-50 mt-2 w-64 rounded-2xl border border-border bg-surface/95 py-5 shadow-[var(--shadow-strong)] backdrop-blur-xl"
+            >
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Close filter"
+                className="tap-target absolute right-3 top-3 inline-flex items-center justify-center text-text-3 transition-colors hover:text-ink"
+              >
+                <CloseIcon />
+              </button>
+
+              <div className="mt-3 flex flex-col items-center">
+                {options.map((option) => {
+                  const isActive = option.value === active;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={isActive}
+                      onClick={() => {
+                        onChange(option.value);
+                        setOpen(false);
+                      }}
+                      className={cn(
+                        "flex items-center gap-2 px-6 py-2.5 font-mono text-caption uppercase tracking-[0.1em] transition-colors",
+                        isActive ? "font-semibold text-ink" : "text-text-3 hover:text-ink",
+                      )}
+                    >
+                      {isActive ? <span className="h-1.5 w-1.5 rounded-full bg-ink" aria-hidden="true" /> : null}
+                      {option.label}
+                      <sup className="text-[9px] font-normal text-text-3">({option.count})</sup>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }
@@ -170,6 +258,22 @@ function ListIcon() {
         strokeWidth="1.6"
         strokeLinecap="round"
       />
+    </svg>
+  );
+}
+
+function ChevronIcon({ className }: { className?: string }) {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { describeError } from "@/lib/db-retry";
 import { logout } from "./actions";
 
 const links = [
@@ -14,13 +15,29 @@ const links = [
   { href: "/admin/faq", label: "FAQ" },
   { href: "/admin/blog", label: "Blog" },
   { href: "/admin/newsletter", label: "Newsletter" },
+  { href: "/admin/sync", label: "Sync" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   const session = token ? await verifySessionToken(token) : null;
-  const unreadCount = session ? await prisma.contactMessage.count({ where: { read: false } }) : 0;
+
+  // This wraps every single admin page, including /admin/sync — the one
+  // page an admin most needs to reach *during* a primary outage. A count
+  // query failing here must never take the whole admin section down with
+  // it; falling back to an unknown-but-safe 0 badge is a small price for
+  // "still able to log in and act" during an incident. Not run through
+  // the public-read fallback (queries.ts) on purpose: contact messages
+  // aren't part of what the read-only standby mirrors.
+  let unreadCount = 0;
+  if (session) {
+    try {
+      unreadCount = await prisma.contactMessage.count({ where: { read: false } });
+    } catch (error) {
+      console.warn(`[db] failed to load unread message count — ${describeError(error)}`);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-surface-2">

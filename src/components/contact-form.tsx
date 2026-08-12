@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { submitContactMessage, type ContactFormState } from "@/lib/contact-actions";
 import { Button } from "@/components/ui/button";
+import { CheckIcon } from "@/components/ui/check-icon";
 
 const initialState: ContactFormState = {};
 
@@ -14,9 +15,15 @@ export function ContactForm() {
 
   if (state?.success) {
     return (
-      <p className="text-body-sm text-hero-text-2" role="status">
-        Pesan terkirim - terima kasih, saya akan balas secepatnya.
-      </p>
+      <div
+        className="mx-auto mt-10 flex max-w-md items-center gap-3 rounded-lg border border-white/20 bg-white/5 px-4 py-3.5 text-left"
+        role="status"
+      >
+        <CheckIcon className="shrink-0 text-hero-ink" />
+        <p className="text-body-sm text-hero-text-2">
+          Pesan terkirim — masuk antrian, biasanya saya balas dalam 1x24 jam.
+        </p>
+      </div>
     );
   }
 

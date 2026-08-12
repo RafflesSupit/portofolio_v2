@@ -8,6 +8,8 @@ import { prisma } from "@/lib/prisma";
 import { uploadToR2 } from "@/lib/r2";
 import { extractFormValues } from "@/lib/form-values";
 import { notifySubscribersOfNewPost } from "@/lib/newsletter-broadcast";
+import { isConnectionError, SAVE_UNAVAILABLE_MESSAGE } from "@/lib/db-retry";
+import { syncPost, deletePost as deletePostFromReplica } from "@/lib/sync-replica";
 
 const postSchema = z.object({
   slug: z
@@ -61,8 +63,9 @@ export async function createPost(
   const coverImageUrl = await resolveCoverImageUrl(formData);
   const published = parsed.data.published === "on";
 
+  let post;
   try {
-    await prisma.post.create({
+    post = await prisma.post.create({
       data: {
         slug: parsed.data.slug,
         title: parsed.data.title,
@@ -82,8 +85,13 @@ export async function createPost(
         submittedAt: Date.now(),
       };
     }
+    if (isConnectionError(error)) {
+      return { error: SAVE_UNAVAILABLE_MESSAGE, values: extractFormValues(formData), submittedAt: Date.now() };
+    }
     throw error;
   }
+
+  await syncPost(post);
 
   if (published) {
     await notifySubscribersOfNewPost({
@@ -113,7 +121,15 @@ export async function updatePost(
     };
   }
 
-  const existing = await prisma.post.findUnique({ where: { id } });
+  let existing;
+  try {
+    existing = await prisma.post.findUnique({ where: { id } });
+  } catch (error) {
+    if (isConnectionError(error)) {
+      return { error: SAVE_UNAVAILABLE_MESSAGE, values: extractFormValues(formData), submittedAt: Date.now() };
+    }
+    throw error;
+  }
   if (!existing) {
     return { error: "Post tidak ditemukan.", values: extractFormValues(formData), submittedAt: Date.now() };
   }
@@ -122,8 +138,9 @@ export async function updatePost(
   const published = parsed.data.published === "on";
   const publishedAt = published ? (existing.publishedAt ?? new Date()) : existing.publishedAt;
 
+  let post;
   try {
-    await prisma.post.update({
+    post = await prisma.post.update({
       where: { id },
       data: {
         slug: parsed.data.slug,
@@ -144,8 +161,13 @@ export async function updatePost(
         submittedAt: Date.now(),
       };
     }
+    if (isConnectionError(error)) {
+      return { error: SAVE_UNAVAILABLE_MESSAGE, values: extractFormValues(formData), submittedAt: Date.now() };
+    }
     throw error;
   }
+
+  await syncPost(post);
 
   // Only broadcast on the transition into "published" — re-saving an
   // already-published post (typo fix, etc.) shouldn't re-notify everyone.
@@ -167,6 +189,7 @@ export async function updatePost(
 export async function deletePost(formData: FormData) {
   const id = String(formData.get("id"));
   await prisma.post.delete({ where: { id } });
+  await deletePostFromReplica(id);
   revalidatePath("/");
   revalidatePath("/blog");
   revalidatePath("/admin/blog");

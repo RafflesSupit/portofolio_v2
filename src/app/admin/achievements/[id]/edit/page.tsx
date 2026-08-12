@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { prismaReplica } from "@/lib/prisma-replica";
+import { withFallback } from "@/lib/db-retry";
 import { AchievementForm } from "../../achievement-form";
 
 export default async function EditAchievementPage({
@@ -8,7 +10,11 @@ export default async function EditAchievementPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const item = await prisma.achievement.findUnique({ where: { id } });
+  const item = await withFallback(
+    () => prisma.achievement.findUnique({ where: { id } }),
+    () => prismaReplica!.achievement.findUnique({ where: { id } }),
+    null,
+  );
   if (!item) notFound();
 
   return (

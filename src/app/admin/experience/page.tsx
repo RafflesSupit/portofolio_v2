@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { prismaReplica } from "@/lib/prisma-replica";
+import { withFallback } from "@/lib/db-retry";
 import { ExperienceList } from "./experience-list";
 
 export default async function AdminExperiencePage() {
-  const items = await prisma.experienceItem.findMany({ orderBy: { order: "asc" } });
+  const items = await withFallback(
+    () => prisma.experienceItem.findMany({ orderBy: { order: "asc" } }),
+    () => prismaReplica!.experienceItem.findMany({ orderBy: { order: "asc" } }),
+    [],
+  );
 
   return (
     <div>

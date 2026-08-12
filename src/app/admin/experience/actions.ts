@@ -5,6 +5,12 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { extractFormValues } from "@/lib/form-values";
+import { isConnectionError, SAVE_UNAVAILABLE_MESSAGE } from "@/lib/db-retry";
+import {
+  syncExperienceItem,
+  deleteExperienceItem as deleteExperienceItemFromReplica,
+  syncExperienceItemOrder,
+} from "@/lib/sync-replica";
 
 const experienceSchema = z.object({
   role: z.string().min(1),
@@ -35,16 +41,26 @@ export async function createExperienceItem(
     return { error: "Data tidak valid.", values: extractFormValues(formData), submittedAt: Date.now() };
   }
 
-  const max = await prisma.experienceItem.aggregate({ _max: { order: true } });
-  await prisma.experienceItem.create({
-    data: {
-      role: parsed.data.role,
-      org: parsed.data.org,
-      period: parsed.data.period,
-      points: parsePoints(parsed.data.points),
-      order: (max._max.order ?? -1) + 1,
-    },
-  });
+  let item;
+  try {
+    const max = await prisma.experienceItem.aggregate({ _max: { order: true } });
+    item = await prisma.experienceItem.create({
+      data: {
+        role: parsed.data.role,
+        org: parsed.data.org,
+        period: parsed.data.period,
+        points: parsePoints(parsed.data.points),
+        order: (max._max.order ?? -1) + 1,
+      },
+    });
+  } catch (error) {
+    if (isConnectionError(error)) {
+      return { error: SAVE_UNAVAILABLE_MESSAGE, values: extractFormValues(formData), submittedAt: Date.now() };
+    }
+    throw error;
+  }
+
+  await syncExperienceItem(item);
 
   revalidatePath("/");
   revalidatePath("/admin/experience");
@@ -61,15 +77,25 @@ export async function updateExperienceItem(
     return { error: "Data tidak valid.", values: extractFormValues(formData), submittedAt: Date.now() };
   }
 
-  await prisma.experienceItem.update({
-    where: { id },
-    data: {
-      role: parsed.data.role,
-      org: parsed.data.org,
-      period: parsed.data.period,
-      points: parsePoints(parsed.data.points),
-    },
-  });
+  let item;
+  try {
+    item = await prisma.experienceItem.update({
+      where: { id },
+      data: {
+        role: parsed.data.role,
+        org: parsed.data.org,
+        period: parsed.data.period,
+        points: parsePoints(parsed.data.points),
+      },
+    });
+  } catch (error) {
+    if (isConnectionError(error)) {
+      return { error: SAVE_UNAVAILABLE_MESSAGE, values: extractFormValues(formData), submittedAt: Date.now() };
+    }
+    throw error;
+  }
+
+  await syncExperienceItem(item);
 
   revalidatePath("/");
   revalidatePath("/admin/experience");
@@ -79,6 +105,7 @@ export async function updateExperienceItem(
 export async function deleteExperienceItem(formData: FormData) {
   const id = String(formData.get("id"));
   await prisma.experienceItem.delete({ where: { id } });
+  await deleteExperienceItemFromReplica(id);
   revalidatePath("/");
   revalidatePath("/admin/experience");
 }
@@ -87,6 +114,7 @@ export async function reorderExperienceItems(orderedIds: string[]) {
   await prisma.$transaction(
     orderedIds.map((id, index) => prisma.experienceItem.update({ where: { id }, data: { order: index } })),
   );
+  await syncExperienceItemOrder(orderedIds);
   revalidatePath("/");
   revalidatePath("/admin/experience");
 }

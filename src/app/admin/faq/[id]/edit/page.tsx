@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { prismaReplica } from "@/lib/prisma-replica";
+import { withFallback } from "@/lib/db-retry";
 import { FaqForm } from "../../faq-form";
 
 export default async function EditFaqPage({
@@ -8,7 +10,11 @@ export default async function EditFaqPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const item = await prisma.faqItem.findUnique({ where: { id } });
+  const item = await withFallback(
+    () => prisma.faqItem.findUnique({ where: { id } }),
+    () => prismaReplica!.faqItem.findUnique({ where: { id } }),
+    null,
+  );
   if (!item) notFound();
 
   return (
