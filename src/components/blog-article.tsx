@@ -1,18 +1,43 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, isValidElement } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { RegistrationMark } from "@/components/ui/registration-mark";
 import { SpecLabel } from "@/components/ui/spec-label";
 import { Reveal } from "@/components/ui/reveal";
 import { ReadingProgressBar } from "@/components/reading-progress-bar";
+import { MermaidDiagram } from "@/components/ui/mermaid-diagram";
 import type { PostDetail, PostSummary } from "@/lib/queries";
 
 function formatDate(date: Date | null) {
   return date?.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) ?? "";
 }
+
+// ```mermaid fenced blocks come through as <pre><code class="language-mermaid">
+// — swap those specifically for a rendered diagram, and leave every other
+// code block exactly as the default `pre`/`code` markup already styled below.
+const markdownComponents: Components = {
+  pre({ children }) {
+    if (isValidElement<{ className?: string; children?: React.ReactNode }>(children)) {
+      const match = /language-(\w+)/.exec(children.props.className ?? "");
+      if (match?.[1] === "mermaid") {
+        return <MermaidDiagram code={String(children.props.children).replace(/\n$/, "")} />;
+      }
+    }
+    return <pre>{children}</pre>;
+  },
+  table({ node, ...props }) {
+    void node;
+    return (
+      <div className="overflow-x-auto">
+        <table {...props} />
+      </div>
+    );
+  },
+};
 
 /**
  * codapress.co.uk/insights pattern: left reading column with a key/value
@@ -59,7 +84,15 @@ export function BlogArticle({
           </Reveal>
 
           <div className="mt-10 grid gap-12 md:grid-cols-[1fr_340px] md:gap-20">
-            <div className="max-w-[720px]">
+            {/*
+              min-w-0 overrides a grid item's default min-width:auto, which
+              otherwise refuses to shrink below its content's natural width
+              — a wide table or code block would stretch this whole column
+              (and the grid track with it) instead of scrolling internally
+              via overflow-x-auto, which is what made the entire page
+              widen rather than just the table/diagram.
+            */}
+            <div className="min-w-0 max-w-[720px]">
               <Reveal delay={0.05}>
                 <h1 className="text-display-l text-ink">{post.title}</h1>
               </Reveal>
@@ -106,8 +139,10 @@ export function BlogArticle({
                 the read, reading as "the content never showed up". Body
                 copy you're there to read should just be visible.
               */}
-              <div className="mt-10 text-body-lg leading-[1.75] text-text-2 [&>p:first-of-type]:mt-0 [&>p:first-of-type]:text-h4 [&>p:first-of-type]:font-normal [&>p:first-of-type]:text-ink [&_a]:text-accent-ink [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-border-strong [&_blockquote]:pl-4 [&_blockquote]:italic [&_code]:rounded [&_code]:bg-surface-2 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-body-sm [&_h1]:text-h2 [&_h1]:mt-10 [&_h1]:text-ink [&_h2]:text-h3 [&_h2]:mt-8 [&_h2]:text-ink [&_h3]:text-h4 [&_h3]:mt-6 [&_h3]:text-ink [&_li]:mt-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mt-5 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-surface-2 [&_pre]:p-4 [&_ul]:list-disc [&_ul]:pl-6">
-                <ReactMarkdown>{post.content}</ReactMarkdown>
+              <div className="mt-10 text-body-lg leading-[1.75] text-text-2 [&>p:first-of-type]:mt-0 [&>p:first-of-type]:text-h4 [&>p:first-of-type]:font-normal [&>p:first-of-type]:text-ink [&_a]:text-accent-ink [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-border-strong [&_blockquote]:pl-4 [&_blockquote]:italic [&_code]:rounded [&_code]:bg-surface-2 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-body-sm [&_h1]:text-h2 [&_h1]:mt-10 [&_h1]:text-ink [&_h2]:text-h3 [&_h2]:mt-8 [&_h2]:text-ink [&_h3]:text-h4 [&_h3]:mt-6 [&_h3]:text-ink [&_li]:mt-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mt-5 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-surface-2 [&_pre]:p-4 [&_table]:min-w-full [&_table]:border-collapse [&_table]:text-body-sm [&_th]:border [&_th]:border-border [&_th]:bg-surface-2 [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-semibold [&_th]:text-ink [&_td]:border [&_td]:border-border [&_td]:px-3 [&_td]:py-2 [&_td]:align-top [&_ul]:list-disc [&_ul]:pl-6">
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                  {post.content}
+                </ReactMarkdown>
               </div>
             </div>
 
