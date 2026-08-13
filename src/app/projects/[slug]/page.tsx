@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { SpecLabel } from "@/components/ui/spec-label";
 import { RegistrationMark } from "@/components/ui/registration-mark";
 import { Reveal } from "@/components/ui/reveal";
+import { StoryText } from "@/components/ui/story-text";
 import { getProfile, getProjectBySlug, getProjectCount } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -94,7 +95,7 @@ export default async function ProjectCaseStudyPage({
               {story.map((section) => (
                 <Reveal key={section.label}>
                   <SpecLabel index={section.index}>{section.label}</SpecLabel>
-                  <p className="mt-4 max-w-[65ch] text-h4 font-normal text-text-2">{section.text}</p>
+                  <StoryText text={section.text} />
                 </Reveal>
               ))}
 

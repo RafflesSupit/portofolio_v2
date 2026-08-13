@@ -229,7 +229,7 @@ export function ProjectForm(props: Props) {
         <div className="mt-4 space-y-4">
           <div>
             <label className="block text-body-sm text-text-2" htmlFor="challenge">
-              Challenge
+              Challenge (baris kosong = paragraf baru, awali baris dengan &quot;- &quot; untuk poin)
             </label>
             <textarea
               id="challenge"
@@ -241,7 +241,7 @@ export function ProjectForm(props: Props) {
           </div>
           <div>
             <label className="block text-body-sm text-text-2" htmlFor="solution">
-              Solution
+              Solution (baris kosong = paragraf baru, awali baris dengan &quot;- &quot; untuk poin)
             </label>
             <textarea
               id="solution"
@@ -253,7 +253,7 @@ export function ProjectForm(props: Props) {
           </div>
           <div>
             <label className="block text-body-sm text-text-2" htmlFor="result">
-              Result
+              Result (baris kosong = paragraf baru, awali baris dengan &quot;- &quot; untuk poin)
             </label>
             <textarea
               id="result"

@@ -78,12 +78,29 @@ export function ProjectGallery({
               className="absolute inset-0 touch-pan-y active:cursor-grabbing"
               style={{ cursor: images.length > 1 ? "grab" : "default" }}
             >
+              {/*
+                Screenshots aren't always the 4:3/16:9 crop this frame
+                prefers — object-cover would just cut them off. A blurred,
+                oversized copy of the same image fills the frame as a
+                backdrop while the real image sits on top with
+                object-contain, so nothing is ever cropped regardless of
+                its native orientation.
+              */}
+              <Image
+                src={images[active]}
+                alt=""
+                fill
+                aria-hidden="true"
+                sizes="900px"
+                className="pointer-events-none scale-110 object-cover opacity-40 blur-2xl"
+                draggable={false}
+              />
               <Image
                 src={images[active]}
                 alt={`${alt} screenshot ${active + 1}`}
                 fill
                 sizes="900px"
-                className="pointer-events-none object-cover"
+                className="pointer-events-none object-contain"
                 draggable={false}
                 priority={active === 0}
               />
