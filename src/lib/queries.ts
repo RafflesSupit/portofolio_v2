@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { prismaReplica } from "@/lib/prisma-replica";
 import { withFallback } from "@/lib/db-retry";
+import { toProxiedUrl } from "@/lib/image-url";
 
 export type ProfileData = {
   name: string;
@@ -140,8 +141,8 @@ export async function getProfile(): Promise<ProfileData> {
       email: `mailto:${row.email}`,
     },
     location: row.location,
-    resumeUrl: row.resumeUrl,
-    showreelUrl: row.showreelUrl,
+    resumeUrl: toProxiedUrl(row.resumeUrl),
+    showreelUrl: row.showreelUrl ? toProxiedUrl(row.showreelUrl) : null,
     valueProposition: row.valueProposition,
     quickFacts: {
       focus: row.focusText,
@@ -177,7 +178,7 @@ export async function getProjects(): Promise<ProjectData[]> {
     highlights: row.highlights,
     tags: row.tags,
     href: row.href,
-    image: row.imageUrl,
+    image: toProxiedUrl(row.imageUrl),
     hasCaseStudy: row.hasCaseStudy,
   }));
 }
@@ -208,12 +209,12 @@ export async function getProjectBySlug(slug: string): Promise<ProjectCaseStudy |
     highlights: row.highlights,
     tags: row.tags,
     href: row.href,
-    image: row.imageUrl,
+    image: toProxiedUrl(row.imageUrl),
     hasCaseStudy: row.hasCaseStudy,
     challenge: row.challenge,
     solution: row.solution,
     result: row.result,
-    gallery: row.gallery,
+    gallery: row.gallery.map(toProxiedUrl),
   };
 }
 
@@ -270,7 +271,7 @@ export async function getPublishedPosts(limit?: number): Promise<PostSummary[]> 
     slug: row.slug,
     title: row.title,
     excerpt: row.excerpt,
-    coverImageUrl: row.coverImageUrl,
+    coverImageUrl: row.coverImageUrl ? toProxiedUrl(row.coverImageUrl) : null,
     tags: row.tags,
     publishedAt: row.publishedAt,
   }));
@@ -289,7 +290,7 @@ export async function getPostBySlug(slug: string): Promise<PostDetail | null> {
     title: row.title,
     excerpt: row.excerpt,
     content: row.content,
-    coverImageUrl: row.coverImageUrl,
+    coverImageUrl: row.coverImageUrl ? toProxiedUrl(row.coverImageUrl) : null,
     tags: row.tags,
     publishedAt: row.publishedAt,
   };

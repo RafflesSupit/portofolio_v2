@@ -29,12 +29,16 @@ const nextConfig: NextConfig = {
     // picsum.photos is only used by the original seed's placeholder project
     // images; safe to drop once real images are uploaded via the admin panel.
     remotePatterns: [...r2RemotePattern(), { protocol: "https", hostname: "picsum.photos" }],
-    // Next's image optimizer fetches the source on the server before
-    // resizing it; large originals (e.g. an unresized phone photo) can
-    // make that fetch slow enough to 504. Images are compressed at upload
-    // time (see uploadToR2) instead, so skip server-side re-optimization
-    // and serve the R2 URL directly - more reliable than marginally
-    // smaller transfer sizes.
+    // R2's public URL is Cloudflare's shared `r2.dev` dev domain, which some
+    // ISP DNS resolvers fail to resolve for visitors. A custom loader routes
+    // every <Image> through this app's own domain (see /api/media) instead
+    // of letting the browser resolve r2.dev itself — Next's built-in
+    // optimizer is bypassed entirely (no resizing/re-encoding), matching
+    // the original intent of not re-optimizing already-compressed uploads
+    // (see uploadToR2 in lib/r2.ts).
+    // Images are compressed at upload time (see uploadToR2) and served
+    // through /api/media (see lib/image-url.ts's toProxiedUrl) rather than
+    // Next's optimizer, so skip server-side re-optimization here too.
     unoptimized: true,
   },
 };

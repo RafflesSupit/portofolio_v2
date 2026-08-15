@@ -130,6 +130,32 @@ export function Showreel({
     playerRef.current?.requestFullscreen();
   }
 
+  // Mobile browsers only allow locking screen orientation while an element
+  // is fullscreen, so this has to react to the fullscreenchange event
+  // rather than run inline in toggleFullscreen — that also covers
+  // fullscreen being exited via the OS back-gesture/button, not just our
+  // own close button. Desktop browsers (and Safari, which has no `lock`
+  // method at all) simply don't support this — the rejection is swallowed
+  // since portrait fullscreen there is a non-issue anyway.
+  useEffect(() => {
+    function onFullscreenChange() {
+      // TS's lib.dom types don't include `lock`/`unlock` (spec support is
+      // still inconsistent enough that they're omitted), so this is
+      // widened manually rather than relying on the built-in type.
+      const orientation = screen.orientation as
+        | (ScreenOrientation & { lock?: (o: string) => Promise<void>; unlock?: () => void })
+        | undefined;
+      if (document.fullscreenElement) {
+        orientation?.lock?.("landscape").catch(() => {});
+      } else {
+        orientation?.unlock?.();
+      }
+    }
+
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
+
   if (!videoUrl) return null;
 
   const modal = (

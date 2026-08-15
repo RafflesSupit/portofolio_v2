@@ -10,6 +10,7 @@ import { SpecLabel } from "@/components/ui/spec-label";
 import { Reveal } from "@/components/ui/reveal";
 import { ReadingProgressBar } from "@/components/reading-progress-bar";
 import { MermaidDiagram } from "@/components/ui/mermaid-diagram";
+import { toProxiedUrl } from "@/lib/image-url";
 import type { PostDetail, PostSummary } from "@/lib/queries";
 
 function formatDate(date: Date | null) {
@@ -36,6 +37,12 @@ const markdownComponents: Components = {
         <table {...props} />
       </div>
     );
+  },
+  // Inline `![alt](url)` images in post content point straight at R2's raw
+  // URL, same as coverImageUrl/gallery — needs the same proxy rewrite.
+  img({ node, src, ...props }) {
+    void node;
+    return <img {...props} src={typeof src === "string" ? toProxiedUrl(src) : src} />;
   },
 };
 
