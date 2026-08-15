@@ -18,7 +18,17 @@ export function MermaidDiagram({ code }: { code: string }) {
     let cancelled = false;
 
     import("mermaid").then(async ({ default: mermaid }) => {
-      mermaid.initialize({ startOnLoad: false, theme: "neutral", fontFamily: "inherit" });
+      // Mermaid's default behavior on a parse error is to swallow it and
+      // resolve with its own built-in "Syntax error in text..." SVG
+      // instead of rejecting — suppressErrorRendering makes it actually
+      // throw, so a malformed diagram falls through to the catch below
+      // (raw-code fallback) instead of showing that built-in graphic.
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: "neutral",
+        fontFamily: "inherit",
+        suppressErrorRendering: true,
+      });
       try {
         const { svg } = await mermaid.render(`mermaid-${id}`, code);
         if (!cancelled) setSvg(svg);
