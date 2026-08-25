@@ -8,7 +8,6 @@ import { Reveal } from "@/components/ui/reveal";
 import { Button } from "@/components/ui/button";
 import { TextLink } from "@/components/ui/text-link";
 import { SpecLabel } from "@/components/ui/spec-label";
-import { toThumbnailUrl } from "@/lib/image-url";
 import { useSafeReducedMotion } from "@/lib/use-safe-reduced-motion";
 import { cn } from "@/lib/cn";
 import type { ProjectData } from "@/lib/queries";
@@ -60,7 +59,7 @@ function FeaturedProjectRow({ project, index }: { project: ProjectData; index: n
     <div ref={ref} className="grid gap-8 md:grid-cols-2 md:items-center md:gap-16">
       <Reveal
         className={cn(
-          "relative aspect-[4/3] overflow-hidden rounded-lg border border-border",
+          "group relative aspect-[4/3] overflow-hidden rounded-lg border border-border",
           reversed && "md:order-2",
         )}
       >
@@ -69,11 +68,17 @@ function FeaturedProjectRow({ project, index }: { project: ProjectData; index: n
           style={shouldReduceMotion ? undefined : { scale: imageScale }}
         >
           <Image
-            src={toThumbnailUrl(project.image)}
+            src={project.image}
             alt=""
             fill
             sizes="(min-width: 768px) 50vw, 100vw"
-            className="object-cover"
+            // Full ~1920px image, not the -thumb variant — this box can render
+            // well past 640px wide on large desktop viewports, and the thumb
+            // was visibly blurry once upscaled that far. The blur/scale here
+            // is a deliberate at-rest treatment (sharpens on hover), separate
+            // from that fix — desktop-only (md:) since touch has no hover to
+            // clear it.
+            className="object-cover transition-[filter,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] md:blur-md md:scale-105 md:group-hover:blur-0 md:group-hover:scale-100"
           />
         </motion.div>
       </Reveal>

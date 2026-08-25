@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import type { ProjectData } from "@/lib/queries";
 import { Reveal } from "@/components/ui/reveal";
 import { Card, CardBody, CardMedia } from "@/components/ui/card";
 import { ArrowUpRightIcon } from "@/components/ui/arrow-icon";
-import { toThumbnailUrl } from "@/lib/image-url";
 
 export function ProjectList({
   projects,
@@ -27,10 +25,11 @@ export function ProjectList({
 }
 
 /**
- * Renders the `-thumb` variant uploadToR2 generates (see lib/r2.ts) instead
- * of the full ~1920px project image, since the grid only ever displays this
- * at roughly card width (~half the 1180px container). Falls back to the
- * full image on error for projects uploaded before thumbnails existed.
+ * Uses the full ~1920px project image rather than the `-thumb` variant
+ * (see lib/r2.ts) — this card is `h-[90vh]` tall, so on most viewports the
+ * rendered height alone exceeds the thumb's 640px cap, and object-cover
+ * upscales the shortfall into visible blur. The thumb is fine for the much
+ * smaller hover-preview usage in projects-explorer.tsx.
  */
 function ProjectMedia({
   project,
@@ -41,19 +40,14 @@ function ProjectMedia({
   monogram: string;
   number?: number;
 }) {
-  const [thumbFailed, setThumbFailed] = useState(false);
-  const src = thumbFailed ? project.image : toThumbnailUrl(project.image);
-
   return (
     <CardMedia
-      key={src}
-      src={src}
+      src={project.image}
       alt=""
       monogram={monogram}
       aspect="auto"
       className="h-2/3 shrink-0 border-b border-border md:h-full md:w-[44%] md:border-b-0 md:border-r"
       grayscaleHover
-      onError={() => setThumbFailed(true)}
     >
       {number !== undefined ? (
         <span
