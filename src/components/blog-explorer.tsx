@@ -54,24 +54,40 @@ export function BlogExplorer({ posts }: { posts: PostSummary[] }) {
 }
 
 function PostCard({ post, index }: { post: PostSummary; index: number }) {
+  const [errored, setErrored] = useState(false);
+  const showFallback = !post.coverImageUrl || errored;
+  const monogram = post.title
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("").toUpperCase() || "?";
+
   return (
     <Reveal delay={(index % 2) * 0.06}>
       <Link href={`/blog/${post.slug}`} data-cursor-hover data-cursor-label="Read" className="group block">
         <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-border bg-surface-2">
-          {post.coverImageUrl ? (
-            <Image
-              src={post.coverImageUrl}
-              alt=""
-              fill
-              sizes="(min-width: 640px) 50vw, 100vw"
-              className="object-cover grayscale transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03] group-hover:grayscale-0"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center">
-              <span className="font-mono text-caption text-text-3">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-            </div>
+          { showFallback || !post.coverImageUrl ? (
+              <div
+                className="absolute inset-0 flex items-center justify-center transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04]"
+                style={{ background: "linear-gradient(135deg, var(--surface-2), var(--accent-bg))" }}
+              >
+                {monogram ? (
+                  <span className="text-display-l select-none text-accent-border" aria-hidden="true">
+                    {monogram}
+                  </span>
+                ) : null}
+              </div>
+            ) : (
+              <Image
+                src={post.coverImageUrl}
+                alt=""
+                fill
+                sizes="(min-width: 640px) 50vw, 100vw"
+                onError={() => {
+                  setErrored(true);
+                }}
+                className="object-cover grayscale transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03] group-hover:grayscale-0"
+              />
           )}
           <span className="absolute left-4 top-4 font-mono text-caption text-white/70 mix-blend-difference">
             {String(index + 1).padStart(2, "0")}

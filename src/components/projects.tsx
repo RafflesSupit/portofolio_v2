@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { SectionHeader } from "@/components/ui/section-header";
@@ -8,6 +8,7 @@ import { Reveal } from "@/components/ui/reveal";
 import { Button } from "@/components/ui/button";
 import { TextLink } from "@/components/ui/text-link";
 import { SpecLabel } from "@/components/ui/spec-label";
+import { ArrowUpRightIcon } from "@/components/ui/arrow-icon";
 import { useSafeReducedMotion } from "@/lib/use-safe-reduced-motion";
 import { cn } from "@/lib/cn";
 import type { ProjectData } from "@/lib/queries";
@@ -49,8 +50,15 @@ function FeaturedProjectRow({ project, index }: { project: ProjectData; index: n
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
   const imageScale = useTransform(scrollYProgress, [0, 0.5, 1], [1.12, 1, 1.06]);
+  const [errored, setErrored] = useState(false);
+  const showFallback = !project.image || errored;
 
   const reversed = index % 2 === 1;
+  const monogram = project.title
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("");
   const linkProps = project.hasCaseStudy
     ? { href: `/projects/${project.slug}` }
     : { href: project.href, target: "_blank" as const, rel: "noreferrer" as const };
@@ -63,24 +71,50 @@ function FeaturedProjectRow({ project, index }: { project: ProjectData; index: n
           reversed && "md:order-2",
         )}
       >
-        <motion.div
-          className="absolute inset-0"
-          style={shouldReduceMotion ? undefined : { scale: imageScale }}
-        >
-          <Image
-            src={project.image}
-            alt=""
-            fill
-            sizes="(min-width: 768px) 50vw, 100vw"
-            // Full ~1920px image, not the -thumb variant — this box can render
-            // well past 640px wide on large desktop viewports, and the thumb
-            // was visibly blurry once upscaled that far. The blur/scale here
-            // is a deliberate at-rest treatment (sharpens on hover), separate
-            // from that fix — desktop-only (md:) since touch has no hover to
-            // clear it.
-            className="object-cover transition-[filter,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] md:blur-md md:scale-105 md:group-hover:blur-0 md:group-hover:scale-100"
-          />
-        </motion.div>
+        {/* Whole image is now the primary click target (not just the "View
+            project" text below), with the site's custom cursor "View" label
+            (see ui/cursor.tsx, which hooks any [data-cursor-hover]). */}
+        <a {...linkProps} data-cursor-hover data-cursor-label="View" className="absolute inset-0 block">
+          <motion.div
+            className="absolute inset-0"
+            style={shouldReduceMotion ? undefined : { scale: imageScale }}
+          >
+            {
+              showFallback ? (
+                  <div
+                    className="absolute inset-0 flex items-center justify-center transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04]"
+                    style={{ background: "linear-gradient(135deg, var(--surface-2), var(--accent-bg))" }}
+                  >
+                    {monogram ? (
+                      <span className="text-display-l select-none text-accent-border" aria-hidden="true">
+                        {monogram}
+                      </span>
+                    ) : null}
+                  </div>
+              ) : (
+
+                <Image
+                  src={project.image}
+                  alt=""
+                  fill
+                  sizes="(min-width: 768px) 50vw, 100vw"
+                  onError={() => {
+                    setErrored(true);
+                  }}
+                  className="object-cover transition-[filter,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] md:blur-[3px] md:scale-[1.02] md:grayscale-[0.6] md:group-hover:blur-none md:group-hover:scale-100 md:group-hover:grayscale-0"
+                />
+              )
+            }
+            
+          </motion.div>
+
+          <span
+            aria-hidden="true"
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-black/30 text-white opacity-0 backdrop-blur-md transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:opacity-100"
+          >
+            <ArrowUpRightIcon className="h-5 w-5" />
+          </span>
+        </a>
       </Reveal>
 
       <Reveal delay={0.1} className={reversed ? "md:order-1" : undefined}>

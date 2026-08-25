@@ -36,6 +36,25 @@ function parseTags(value: string | undefined) {
     .filter(Boolean);
 }
 
+/**
+ * Called directly from the client (post-form.tsx), not via <form action> —
+ * the editor inserts the returned URL as `![](url)` at the textarea cursor
+ * immediately after upload, rather than waiting for the whole post to save.
+ */
+export async function uploadContentImage(
+  formData: FormData,
+): Promise<{ url: string } | { error: string }> {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: "File tidak valid." };
+  }
+  if (!file.type.startsWith("image/")) {
+    return { error: "File harus berupa gambar." };
+  }
+  const url = await uploadToR2(file, "blog-content");
+  return { url };
+}
+
 async function resolveCoverImageUrl(
   formData: FormData,
   current?: string | null,

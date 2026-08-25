@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { createPost, updatePost, type PostFormState } from "./actions";
+import { createPost, updatePost, uploadContentImage, type PostFormState } from "./actions";
 
 const initialState: PostFormState = {};
 
@@ -43,6 +43,41 @@ export function PostForm(props: Props) {
   // had wiped the form.
   const values = state.values;
   const [content, setContent] = useState(values?.content ?? defaults.content);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const contentRef = useRef<HTMLTextAreaElement>(null);
+
+  async function handleInsertImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setUploading(true);
+    setUploadError(null);
+    const fd = new FormData();
+    fd.set("file", file);
+    const result = await uploadContentImage(fd);
+    setUploading(false);
+
+    if ("error" in result) {
+      setUploadError(result.error);
+      return;
+    }
+
+    const snippet = `![](${result.url})`;
+    const textarea = contentRef.current;
+    const start = textarea?.selectionStart ?? content.length;
+    const end = textarea?.selectionEnd ?? content.length;
+    const next = content.slice(0, start) + snippet + content.slice(end);
+    setContent(next);
+
+    // setSelectionRange needs the textarea's value to already reflect
+    // `next` — queue it for after this render commits the controlled value.
+    requestAnimationFrame(() => {
+      textarea?.focus();
+      textarea?.setSelectionRange(start + snippet.length, start + snippet.length);
+    });
+  }
 
   return (
     <form key={state.submittedAt ?? "initial"} action={formAction} className="max-w-4xl space-y-5">
@@ -113,12 +148,26 @@ export function PostForm(props: Props) {
 
       <div className="grid gap-5 md:grid-cols-2">
         <div>
-          <label className="block text-body-sm text-text-2" htmlFor="content">
-            Konten (Markdown)
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="block text-body-sm text-text-2" htmlFor="content">
+              Konten (Markdown)
+            </label>
+            <label className="cursor-pointer text-caption text-accent-ink underline">
+              {uploading ? "Mengunggah..." : "+ Sisipkan gambar"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={uploading}
+                onChange={handleInsertImage}
+              />
+            </label>
+          </div>
+          {uploadError ? <p className="mt-1 text-caption text-red-600">{uploadError}</p> : null}
           <textarea
             id="content"
             name="content"
+            ref={contentRef}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             required

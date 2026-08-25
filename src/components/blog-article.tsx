@@ -47,6 +47,30 @@ const markdownComponents: Components = {
 };
 
 /**
+ * Cover images aren't always the portrait crop this rail would prefer
+ * (diagrams/screenshots are usually landscape) — object-cover would just
+ * cut them off. A blurred, oversized copy of the same image fills the
+ * frame as a backdrop while the real image sits on top with
+ * object-contain, so nothing is ever cropped regardless of native
+ * orientation.
+ */
+function CoverImage({ src, aspect, sizes }: { src: string; aspect: string; sizes: string }) {
+  return (
+    <div className={`relative ${aspect} overflow-hidden rounded-lg border border-border bg-surface-2`}>
+      <Image
+        src={src}
+        alt=""
+        fill
+        aria-hidden="true"
+        sizes={sizes}
+        className="scale-110 object-cover opacity-40 blur-2xl"
+      />
+      <Image src={src} alt="" fill sizes={sizes} className="relative object-contain" />
+    </div>
+  );
+}
+
+/**
  * codapress.co.uk/insights pattern: left reading column with a key/value
  * byline block (Author / Date / Reading time), first paragraph styled as a
  * lead-in, and a sticky right rail carrying the cover image plus a
@@ -137,6 +161,20 @@ export function BlogArticle({
               ) : null}
 
               {/*
+                On mobile the grid below collapses to one column, stacking
+                the aside (which carries the cover image) after this whole
+                content block in source order — so on a long post the cover
+                image only appeared once you'd scrolled past the entire
+                article. This renders it once more, right up near the top,
+                for mobile only; the sidebar copy below is hidden below md.
+              */}
+              {post.coverImageUrl ? (
+                <Reveal delay={0.22} className="mt-8 md:hidden">
+                  <CoverImage src={post.coverImageUrl} aspect="aspect-video" sizes="100vw" />
+                </Reveal>
+              ) : null}
+
+              {/*
                 Deliberately not wrapped in <Reveal> — that component only
                 fades an element in once 20% of *its own height* has
                 scrolled into view, which works fine for compact blocks but
@@ -154,32 +192,10 @@ export function BlogArticle({
             </div>
 
             <aside className="space-y-10 md:sticky md:top-32 md:h-fit">
-              <Reveal delay={0.1}>
+              {/* Mobile gets its own copy up top (see above) — this one is desktop-only. */}
+              <Reveal delay={0.1} className="hidden md:block">
                 {post.coverImageUrl ? (
-                  // Cover images aren't always the portrait crop this rail
-                  // would prefer (diagrams/screenshots are usually
-                  // landscape) — object-cover would just cut them off. A
-                  // blurred, oversized copy of the same image fills the
-                  // frame as a backdrop while the real image sits on top
-                  // with object-contain, so nothing is ever cropped
-                  // regardless of its native orientation.
-                  <div className="relative aspect-[4/5] overflow-hidden rounded-lg border border-border bg-surface-2">
-                    <Image
-                      src={post.coverImageUrl}
-                      alt=""
-                      fill
-                      aria-hidden="true"
-                      sizes="340px"
-                      className="scale-110 object-cover opacity-40 blur-2xl"
-                    />
-                    <Image
-                      src={post.coverImageUrl}
-                      alt=""
-                      fill
-                      sizes="340px"
-                      className="relative object-contain"
-                    />
-                  </div>
+                  <CoverImage src={post.coverImageUrl} aspect="aspect-[4/5]" sizes="340px" />
                 ) : (
                   <div className="relative flex aspect-[4/5] items-center justify-center overflow-hidden rounded-lg border border-border bg-surface-2">
                     <RegistrationMark position="top-right" className="text-text-3" />
