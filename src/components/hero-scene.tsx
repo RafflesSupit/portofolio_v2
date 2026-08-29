@@ -223,6 +223,23 @@ export function HeroScene() {
   const [isFinePointer] = useState(() => window.matchMedia("(pointer: fine)").matches);
   const [canvasKey, setCanvasKey] = useState(0);
   const [disabled, setDisabled] = useState(false);
+  // R3F's Canvas defaults to frameloop="always" -- it keeps driving the
+  // shader's requestAnimationFrame loop forever, even once the hero has
+  // scrolled far out of view, silently eating main-thread/GPU budget for
+  // the rest of the page's scroll. Pausing it via IntersectionObserver once
+  // the section is offscreen is what actually frees that budget back up.
+  const [inView, setInView] = useState(true);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), {
+      rootMargin: "200px 0px",
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const handleLowFps = useCallback(() => setDisabled(true), []);
 
@@ -252,15 +269,18 @@ export function HeroScene() {
   if (!webglReady || disabled) return null;
 
   return (
-    <WebGLErrorBoundary key={canvasKey} onError={() => setDisabled(true)}>
-      <Canvas
-        gl={{ antialias: false, alpha: true, powerPreference: "low-power" }}
-        dpr={[1, 2]}
-        className="absolute inset-0 h-full w-full"
-        onCreated={handleCreated}
-      >
-        <FogField isFinePointer={isFinePointer} onLowFps={handleLowFps} />
-      </Canvas>
-    </WebGLErrorBoundary>
+    <div ref={wrapperRef} className="absolute inset-0 h-full w-full">
+      <WebGLErrorBoundary key={canvasKey} onError={() => setDisabled(true)}>
+        <Canvas
+          gl={{ antialias: false, alpha: true, powerPreference: "low-power" }}
+          dpr={[1, 2]}
+          frameloop={inView ? "always" : "never"}
+          className="absolute inset-0 h-full w-full"
+          onCreated={handleCreated}
+        >
+          <FogField isFinePointer={isFinePointer} onLowFps={handleLowFps} />
+        </Canvas>
+      </WebGLErrorBoundary>
+    </div>
   );
 }

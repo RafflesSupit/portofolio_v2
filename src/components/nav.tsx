@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion";
 import { ScrambleDigits } from "@/components/ui/scramble-digits";
@@ -81,7 +81,17 @@ export function Nav({ profile, projectCount }: { profile: ProfileData; projectCo
   // still mapped to an actual scrollable section, so the number shown
   // rarely matched where you actually were).
   const { scrollYProgress } = useScroll();
+  const lastPercentUpdate = useRef(0);
   useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    // ScrambleDigits restarts a ~900ms rAF+setState loop on every value
+    // change -- feeding it a new value on every single scroll tick meant it
+    // never got a chance to finish, so it kept re-rendering on literally
+    // every frame for as long as the page was being scrolled. Throttling
+    // how often the displayed percentage changes gives each scramble run
+    // room to actually settle instead of being perpetually restarted.
+    const now = performance.now();
+    if (now - lastPercentUpdate.current < 150) return;
+    lastPercentUpdate.current = now;
     setScrollPercent(Math.round(latest * 100));
   });
 
