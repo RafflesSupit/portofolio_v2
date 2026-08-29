@@ -37,8 +37,8 @@
     "three": "^0.180.0",
     "zod": "^4.4.3"
   },
-  "overrides": {
-    "sharp": "^0.35.3"
+  "optionalDependencies": {
+    "@img/sharp-linux-x64": "0.35.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
