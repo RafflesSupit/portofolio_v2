@@ -15,6 +15,22 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname),
   },
+  // sharp's Linux binary + the libvips shared library it dlopen()s at
+  // runtime are native, platform-specific files that Turbopack's build-time
+  // output tracing has repeatedly failed to pick up on its own (uploadToR2
+  // in lib/r2.ts calls sharp from a server action, not a static import path
+  // tracing can always follow) -- deployed to Vercel, this silently dropped
+  // both packages from the serverless function bundle even though they were
+  // present in node_modules during the build, surfacing as
+  // ERR_DLOPEN_FAILED for libvips-cpp.so at request time. Forcing them in
+  // here makes the include unconditional instead of depending on tracing
+  // correctly following that dynamic path.
+  outputFileTracingIncludes: {
+    "/**": [
+      "./node_modules/@img/sharp-linux-x64/**/*",
+      "./node_modules/@img/sharp-libvips-linux-x64/**/*",
+    ],
+  },
   experimental: {
     serverActions: {
       // Bumped from 10mb for showreel video uploads (see admin/profile).
